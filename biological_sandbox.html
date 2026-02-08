@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Biological Sandbox — Speculative Species Synthesizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0c0e;
+    --surface: #141418;
+    --surface2: #1a1a20;
+    --surface3: #222228;
+    --border: #2a2a32;
+    --border-light: #3a3a44;
+    --text: #d4d4d8;
+    --text-dim: #71717a;
+    --text-faint: #52525b;
+    --accent: #2dd4bf;
+    --accent-dim: #134e4a;
+    --accent-glow: rgba(45, 212, 191, 0.12);
+    --red: #f87171;
+    --amber: #fbbf24;
+    --violet: #a78bfa;
+    --blue: #60a5fa;
+    --rose: #fb7185;
+    --lime: #a3e635;
+    --orange: #fb923c;
+    --pink: #f472b6;
+    --cat-metabolism: #2dd4bf;
+    --cat-structure: #60a5fa;
+    --cat-sensing: #a78bfa;
+    --cat-reproduction: #a3e635;
+    --cat-defense: #f87171;
+    --cat-symbiosis: #fbbf24;
+    --cat-parasitism: #fb923c;
+    --cat-collective: #f472b6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.6;
+    overflow: hidden;
+    height: 100vh;
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+  .mono { font-family: 'DM Mono', monospace; }
+  .serif { font-family: 'Instrument Serif', serif; }
+
+  /* Layout */
+  .app { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    z-index: 50;
+  }
+  .logo { display: flex; align-items: baseline; gap: 10px; }
+  .logo h1 { font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--accent); font-weight: 400; letter-spacing: -0.5px; }
+  .logo span { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 2px; }
+  .header-stats { display: flex; gap: 20px; align-items: center; }
+  .header-stat { text-align: right; }
+  .header-stat .val { font-family: 'DM Mono', monospace; font-size: 18px; color: var(--text); font-weight: 500; }
+  .header-stat .lbl { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1.5px; }
+
+  .main { display: grid; grid-template-columns: 320px 1fr 360px; height: 100%; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    background: var(--surface);
+  }
+  .search-box {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-box input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-box input:focus { border-color: var(--accent); }
+  .search-box input::placeholder { color: var(--text-faint); }
+
+  .filters {
+    padding: 8px 12px;
+    display: flex; flex-wrap: wrap; gap: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-btn {
+    padding: 4px 8px;
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-faint);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--text-dim); color: var(--text-dim); }
+  .filter-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  .specimen-list { flex: 1; overflow-y: auto; padding: 6px; }
+  .specimen-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .specimen-item:hover { background: var(--surface2); }
+  .specimen-item.active {
+    background: var(--surface2);
+    border-left-color: var(--accent);
+  }
+  .specimen-item .icon { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
+  .specimen-item .info { flex: 1; min-width: 0; }
+  .specimen-item .name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .specimen-item .mech { font-size: 10px; color: var(--text-faint); font-family: 'DM Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .specimen-item .add-btn {
+    opacity: 0; flex-shrink: 0;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .specimen-item:hover .add-btn { opacity: 1; }
+  .specimen-item .add-btn:hover { background: var(--accent); color: var(--bg); }
+
+  /* Detail Panel */
+  .detail {
+    overflow-y: auto;
+    padding: 0;
+  }
+  .detail-header {
+    position: relative;
+    padding: 40px 32px 24px;
+    background: linear-gradient(180deg, var(--surface2) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-header .cat-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+  }
+  .detail-header h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1.1;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .detail-header .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .detail-header .source {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 8px;
+    font-style: italic;
+  }
+  .detail-body { padding: 24px 32px 40px; }
+  .detail-section { margin-bottom: 24px; }
+  .detail-section .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .detail-section .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .detail-section p {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .detail-section .constraint-text { color: var(--amber); }
+  .detail-section .hook-text { color: var(--violet); font-style: italic; }
+
+  .tags-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .tag {
+    padding: 2px 7px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tag:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Mixer Panel */
+  .mixer {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; flex-direction: column;
+  }
+  .mixer-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mixer-header h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mixer-header p { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+  .mixer-slots { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .mixer-slot {
+    height: 64px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    display: flex; align-items: center;
+    padding: 0 14px;
+    gap: 10px;
+    background: var(--surface2);
+    transition: all 0.2s;
+    position: relative;
+  }
+  .mixer-slot.filled {
+    border-style: solid;
+    background: var(--bg);
+  }
+  .mixer-slot .slot-icon { font-size: 22px; }
+  .mixer-slot .slot-info { flex: 1; min-width: 0; }
+  .mixer-slot .slot-name { font-size: 11px; font-weight: 600; }
+  .mixer-slot .slot-mech { font-size: 9px; font-family: 'DM Mono', monospace; color: var(--text-faint); }
+  .mixer-slot .slot-remove {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text-faint);
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.15s;
+  }
+  .mixer-slot:hover .slot-remove { opacity: 1; }
+  .mixer-slot .slot-remove:hover { background: var(--red); color: #fff; border-color: var(--red); }
+  .mixer-slot .slot-empty {
+    width: 100%; text-align: center;
+    font-size: 10px; color: var(--text-faint);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  .mixer-actions { padding: 12px 16px; }
+  .synth-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .synth-btn:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+  .synth-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .synth-btn.loading {
+    pointer-events: none;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .clear-btn {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .clear-btn:hover { color: var(--red); }
+
+  /* Hybrid result in mixer */
+  .hybrid-result {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .hybrid-result h4 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .hybrid-result .hybrid-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .hybrid-result .hybrid-body {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%;
+    padding: 40px;
+    text-align: center;
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+  .empty-state h3 { font-family: 'Instrument Serif', serif; font-size: 24px; color: var(--text-dim); margin-bottom: 8px; }
+  .empty-state p { font-size: 12px; color: var(--text-faint); max-width: 300px; }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .main { grid-template-columns: 280px 1fr; }
+    .mixer { display: none; }
+  }
+  @media (max-width: 700px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+
+  /* Stat bars */
+  .stat-bars { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .stat-row { display: flex; align-items: center; gap: 8px; }
+  .stat-row .stat-label { font-size: 9px; font-family: 'DM Mono', monospace; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1px; width: 80px; flex-shrink: 0; }
+  .stat-row .stat-track { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .stat-row .stat-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .stat-row .stat-val { font-size: 9px; font-family: 'DM Mono', monospace; color: var(--text-dim); width: 24px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo">
+    <h1>The Biological Sandbox</h1>
+    <span>Species Synthesizer</span>
+  </div>
+  <div class="header-stats">
+    <div class="header-stat">
+      <div class="val" id="entryCount">0</div>
+      <div class="lbl">Mechanisms</div>
+    </div>
+    <div class="header-stat">
+      <div class="val" id="tagCount">0</div>
+      <div class="lbl">Tags</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search mechanisms, organisms, tags…" oninput="onSearch(this.value)">
+    </div>
+    <div class="filters" id="filterBar"></div>
+    <div class="specimen-list" id="specimenList"></div>
+  </div>
+
+  <!-- Detail -->
+  <div class="detail" id="detailPanel">
+    <div class="empty-state">
+      <div class="icon">🧬</div>
+      <h3>Select a specimen</h3>
+      <p>Browse the catalogue on the left to examine biological mechanisms. Add entries to the synthesizer to generate hybrid species.</p>
+    </div>
+  </div>
+
+  <!-- Mixer -->
+  <div class="mixer">
+    <div class="mixer-header">
+      <h3>⚗ Synthesizer</h3>
+      <p>Combine 2–3 mechanisms. AI generates a speculative hybrid species.</p>
+    </div>
+    <div class="mixer-slots" id="mixerSlots">
+      <div class="mixer-slot" id="slot-0"><div class="slot-empty">Slot 1 — click + to add</div></div>
+      <div class="mixer-slot" id="slot-1"><div class="slot-empty">Slot 2</div></div>
+      <div class="mixer-slot" id="slot-2"><div class="slot-empty">Slot 3</div></div>
+    </div>
+    <div class="mixer-actions">
+      <button class="synth-btn" id="synthBtn" disabled onclick="synthesize()">Synthesize Hybrid</button>
+      <button class="clear-btn" onclick="clearMixer()">Reset</button>
+    </div>
+    <div class="hybrid-result" id="hybridResult" style="display:none;"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ======================================
+// DATA
+// ======================================
+const DB = [
+  // --- METABOLISM & ENERGY ---
+  {
+    id:"m01", name:"Loricifera", icon:"🔬", cat:"Metabolism",
+    mech:"Obligate Anaerobiosis",
+    source:"Loricifera — L'Atalante basin, Mediterranean",
+    what:"Multicellular animals that complete their entire life cycle — growth, reproduction, molting — without any oxygen.",
+    how:"Replaced mitochondria entirely with hydrogenosome-like organelles that produce ATP via substrate-level phosphorylation. Endosymbiotic prokaryotes consume hydrogen waste. Altered body chemistry: high Mg, Br, Fe; reduced Ca. Shell made of chitosan-derivative, not chitin.",
+    constraints:"Tiny (<1mm), extremely low metabolic yield caps size and activity. Obligate dependence on endosymbiotic prokaryotes. Controversial — some argue these are colonized corpses (bodysnatcher hypothesis).",
+    combo:"Pairs with any sealed ecology. Hydrogenosome pathway is ancestrally related to mitochondria — species could lose mitochondria under pressure (devolutionary arc). Symbiont dependency links to Section 6.",
+    hooks:"A clade of complex life that has never known oxygen. What does a civilization look like in sealed, sulfide-rich darkness? How do you distinguish living organisms from colonized corpses on an alien world?",
+    tags:["anoxic","symbiosis","organelle-replacement","extremophile","size-limited","devolution"],
+    stats:{resilience:85, offense:5, regen:20, complexity:70, social:10}
+  },
+  {
+    id:"m02", name:"Radiotrophic Fungi", icon:"☢️", cat:"Metabolism",
+    mech:"Gamma Radiation Energy Harvest",
+    source:"Melanized fungi — Chernobyl Reactor Unit 4",
+    what:"Uses ionizing gamma radiation as a metabolic energy source, analogous to photosynthesis but with nuclear radiation.",
+    how:"Melanin acts as energy transducer — upon gamma exposure, electron transfer capacity increases 4x, driving NAD⁺→NADH reduction. Fungi grow directionally toward radiation sources (radiotropism) and accumulate biomass faster than controls.",
+    constraints:"Low energy yield vs photosynthesis. Requires persistent radiation source. Supplements energy, not raw materials. Must tolerate mutagenic effects, requiring robust DNA repair.",
+    combo:"Natural pairing with Deinococcus DNA repair. Could combine with radiolysis ecosystem for a world powered by decay. Melanin transduction is simple enough to evolve convergently.",
+    hooks:"A species that thrives on nuclear catastrophe — radiation is food. Life clustering around radioactive deposits like Earth life around vents. Melanin engineering as technology.",
+    tags:["radiation","energy-harvest","melanin","extremophile","supplemental-metabolism"],
+    stats:{resilience:75, offense:5, regen:30, complexity:50, social:10}
+  },
+  {
+    id:"m03", name:"Riftia pachyptila", icon:"🧣", cat:"Metabolism",
+    mech:"Chemosynthesis — No Digestive System",
+    source:"Giant tube worms — hydrothermal vent fields",
+    what:"An animal with no mouth, gut, or anus. Derives all nutrition from chemosynthetic bacteria living in a specialized internal organ.",
+    how:"Trophosome organ houses billions of sulfur-oxidizing bacteria. Red plume absorbs H₂S, O₂, and CO₂ from vent water, delivers to bacteria via hemoglobin. Bacteria fix carbon; worm absorbs products. Hemoglobin binds O₂ and H₂S simultaneously without poisoning.",
+    constraints:"Completely dependent on vent chemistry. Obligate symbiosis. Extremely fast growth only while vent active. No independent feeding if symbiosis breaks.",
+    combo:"Complete organ loss via symbiont dependency. Pairs with any deep-integration symbiosis. Hemoglobin specialization pairs with alternative blood chemistries.",
+    hooks:"An animal that gave up eating — no mouth because it doesn't need one. What does it mean to be a container for bacteria? Vulnerability of total dependency on a single environmental feature.",
+    tags:["chemosynthesis","symbiosis","organ-loss","obligate-dependency","deep-sea","vent-ecology"],
+    stats:{resilience:50, offense:0, regen:20, complexity:75, social:80}
+  },
+  {
+    id:"m04", name:"Desulforudis audaxviator", icon:"⚛️", cat:"Metabolism",
+    mech:"Radiolysis-Powered Solitary Ecosystem",
+    source:"Single bacterial species — 2.8km underground, South African gold mines",
+    what:"A single species constituting an entire self-contained ecosystem, powered by radioactive decay of uranium.",
+    how:"Uranium radiation splits water (radiolysis), producing hydrogen. Bacterium uses hydrogen as energy, fixes own carbon and nitrogen. Acquired genes via horizontal transfer from archaea. Lives in 60°C fractured rock, possibly sealed for millions of years.",
+    constraints:"Extremely slow metabolism — doubling may take centuries. Dependent on finite radioactive decay rate. Zero ecological redundancy. Patchwork genome from horizontal gene transfer.",
+    combo:"Ultimate closed system. Geological-timescale metabolism pairs with biological immortality concepts. A civilization based on this would experience time radically differently.",
+    hooks:"An organism that is its own world. Sealed underground for millions of years, running on nuclear decay. What happens when such an ecosystem is breached?",
+    tags:["radiolysis","closed-ecosystem","underground","single-species","horizontal-gene-transfer","geological-time"],
+    stats:{resilience:95, offense:0, regen:10, complexity:40, social:0}
+  },
+  {
+    id:"m05", name:"Euglena", icon:"🟢", cat:"Metabolism",
+    mech:"Mixotrophy — Plant/Animal Switching",
+    source:"Euglena and other mixotrophic protists",
+    what:"Switches between photosynthesis and heterotrophy depending on conditions — blurring the line between plant and animal.",
+    how:"Possesses chloroplasts for photosynthesis AND machinery for phagocytosis. In light: photosynthesize. In dark: consume. Some do both simultaneously. Switching regulated by light, nutrients, prey density.",
+    constraints:"Maintaining two metabolic systems is expensive — jack of all trades. Must carry machinery for both. Specialists often outcompete in their niche.",
+    combo:"Foundational for species that shift behavior on resources. Could scale: photosynthesis in youth, hunting in maturity. Pairs with kleptoplasty for acquired photosynthesis.",
+    hooks:"A species that is both predator and plant. Its ethics, self-concept, relationship to 'food' would be fundamentally alien. Flexibility vs. specialization as metaphor.",
+    tags:["dual-metabolism","photosynthesis","heterotrophy","metabolic-switching","plant-animal-boundary"],
+    stats:{resilience:60, offense:30, regen:20, complexity:55, social:10}
+  },
+  {
+    id:"m06", name:"Naked Mole Rat", icon:"🐀", cat:"Metabolism",
+    mech:"Fructose Emergency Metabolism",
+    source:"Heterocephalus glaber",
+    what:"Survives 18+ minutes without oxygen by switching to fructose metabolism — unknown in other mammals.",
+    how:"Tissues switch to fructolysis pathway, bypassing glycolytic shutdown. GLUT5 fructose transporters highly expressed. Part of broader anomaly suite: eusociality, cancer resistance, cold-bloodedness, extreme longevity.",
+    constraints:"Low ATP yield — emergency backup only. Must stockpile fructose. The whole package suggests deep genomic rewiring, not a single adaptation.",
+    combo:"Pairs with eusociality since same organism exhibits both. Any species could have a 'crisis metabolism' trading efficiency for survival. Pairs with freeze tolerance.",
+    hooks:"A survival mode — degraded but functional. What decisions does a creature make when operating on borrowed time?",
+    tags:["anoxia-tolerance","backup-metabolism","mammalian-anomaly","fructose","emergency-systems"],
+    stats:{resilience:85, offense:15, regen:40, complexity:90, social:95}
+  },
+  {
+    id:"m07", name:"Placozoans", icon:"🦠", cat:"Metabolism",
+    mech:"External Digestion — No Organs",
+    source:"Trichoplax adhaerens — simplest known animal",
+    what:"Digests food externally by crawling over it — no mouth, no gut, no organs of any kind. Only four cell types.",
+    how:"Flat amoeba-like animal secretes digestive enzymes from ventral surface, absorbs nutrients through epithelium. Entire organism is a crawling digestive surface.",
+    constraints:"Limited to biofilms and detritus. No predation, no specialization. Size-limited by lack of transport. Fragile.",
+    combo:"Simplest possible animal — useful as evolutionary starting point. External digestion scales up with corrosive secretions or symbiotic bacteria.",
+    hooks:"The minimum viable animal. A living stomach turned inside out. What counts as an 'individual' when the organism has no differentiated parts?",
+    tags:["external-digestion","no-organs","minimal-body-plan","surface-feeding","ancestral-simplicity"],
+    stats:{resilience:20, offense:5, regen:30, complexity:10, social:5}
+  },
+  {
+    id:"m08", name:"C. metallidurans", icon:"🥇", cat:"Metabolism",
+    mech:"Gold Biomineralization",
+    source:"Cupriavidus metallidurans — auriferous soils",
+    what:"Transforms toxic dissolved gold complexes into solid metallic gold nuggets as a detoxification byproduct.",
+    how:"Gold ions inhibit copper export enzyme CupA, causing lethal copper accumulation. Bacterium reduces gold(III) to Au⁰ nanoparticles in periplasmic space. Bacteria become encased in gold, aggregate into nuggets over geological time.",
+    constraints:"Detoxification, not intentional production — gold is waste. Requires specific geochemistry. Slow process. Organism doesn't benefit from the gold.",
+    combo:"Biology producing geology. Could combine with any metal-rich environment. 'Waste product creates value' — a species whose metabolic waste is precious to another.",
+    hooks:"Alchemy as biology — makes gold because gold is trying to kill it. An economy built on harvesting biological metal waste.",
+    tags:["biomineralization","gold","detoxification","metal-tolerance","geology-biology-interface","waste-as-resource"],
+    stats:{resilience:70, offense:0, regen:10, complexity:50, social:20}
+  },
+  {
+    id:"m09", name:"Geobacter", icon:"🔋", cat:"Metabolism",
+    mech:"Microbial Electrical Grid",
+    source:"Geobacter sulfurreducens — anaerobic soil bacterium",
+    what:"Generates and conducts electricity through biological nanowires, creating a shared electrical grid in soil.",
+    how:"Produces cytochrome OmcS polymer nanowires (not pili as previously thought). Heme groups stacked 3.5Å apart allow electron hopping. Networks create conductive biofilms — a biological power grid.",
+    constraints:"Requires anaerobic conditions and insoluble electron acceptors. Nanowires are metabolically expensive. Low conductivity vs metal. Shared grid raises cooperation/free-rider questions.",
+    combo:"Pairs with bioelectric patterning and bone piezoelectricity. Could enable electrical democracy vs. chemical quorum sensing. 'Shared grid' concept pairs with colonial organisms.",
+    hooks:"A living electrical grid — organisms wired together, sharing electrons. What if cognition emerged from an electrical biofilm?",
+    tags:["bioelectricity","nanowires","cytochrome","electron-transport","anaerobic","communal-infrastructure"],
+    stats:{resilience:45, offense:0, regen:15, complexity:70, social:80}
+  },
+
+  // --- STRUCTURE & MATERIALS ---
+  {
+    id:"s01", name:"Sea Cucumbers", icon:"🥒", cat:"Structure",
+    mech:"Reversible Collagen Liquefaction",
+    source:"Holothuroidea",
+    what:"Rapidly and reversibly liquefies and re-solidifies connective tissue, switching between rigid and fluid body states in seconds.",
+    how:"Mutable collagen tissue (MCT) uses tensilin (stiffen) and softenin (loosen) under neuropeptide control. Dissolves cross-links in seconds → body becomes liquid. Reversal re-establishes rigidity.",
+    constraints:"Structurally vulnerable while liquid. Transition takes seconds, not instant. Precise neural control required — wrong region at wrong time is catastrophic.",
+    combo:"Phase-transition body states. Could combine with regeneration — liquefy, flow, re-solidify in new form. Armor that hardens on impact.",
+    hooks:"A creature that becomes liquid at will. The vulnerability of the transition. The horror of involuntary liquefaction. Shape as choice.",
+    tags:["phase-transition","collagen","body-state-switching","mutable-tissue","neuropeptide-control"],
+    stats:{resilience:60, offense:10, regen:70, complexity:65, social:10}
+  },
+  {
+    id:"s02", name:"Scaly-foot Gastropod", icon:"🐚", cat:"Structure",
+    mech:"Iron Sulfide Armor",
+    source:"Chrysomallon squamiferum — hydrothermal vent snail",
+    what:"Three-layered shell incorporating iron sulfide nanoparticles — the only known animal with iron in its skeleton.",
+    how:"Outer layer: iron sulfide nanoparticles (greigite). Middle: thick organic periostracum. Inner: aragonite. Outer micro-fractures absorb impact, middle arrests cracks, inner maintains integrity. Studied by US military for armor.",
+    constraints:"Heavy, limiting mobility. Only available at vents. Three biomineralization pathways. Cannot self-repair away from vent chemistry.",
+    combo:"Multi-layer armor — universal principle. Combine with magnetite, gold, strontium sulfate biomineralization. Armor that signals when struck (piezoelectric).",
+    hooks:"Armored in iron. Armor you can't repair away from home — diaspora as vulnerability.",
+    tags:["metal-armor","iron-sulfide","layered-defense","biomineralization","vent-ecology"],
+    stats:{resilience:95, offense:10, regen:10, complexity:70, social:5}
+  },
+  {
+    id:"s03", name:"Venus' Flower Basket", icon:"💎", cat:"Structure",
+    mech:"Fiber-Optic Glass Skeleton",
+    source:"Euplectella aspergillum — deep-sea hexactinellid sponge",
+    what:"Silica skeleton that functions as both structural lattice and fiber-optic light transmission — fracture-resistant glass built at room temperature.",
+    how:"Laminated silica spicules with organic interlayers arrest crack propagation. High-refractive-index core + lower-index cladding = light waveguide. Lattice geometry outperforms human-engineered designs.",
+    constraints:"Slow biomineralization. Permanent, sessile architecture. Requires dissolved silica. Organic interlayers limit optical clarity vs synthetic fiber.",
+    combo:"Glass as building material at ambient temperature. Fracture-resistant principle applies to bone, shell, exoskeleton. Fiber-optic capacity + bioluminescence = internal light systems.",
+    hooks:"A creature built of glass, engineered better than anything humans make. A species that transmits light through its own skeleton.",
+    tags:["glass","silica","fiber-optics","fracture-resistant","laminated-architecture","structural-optimization"],
+    stats:{resilience:70, offense:0, regen:5, complexity:80, social:60}
+  },
+  {
+    id:"s04", name:"Acantharia", icon:"✦", cat:"Structure",
+    mech:"Phantom Mineral Skeleton",
+    source:"Acantharia — radiolarian protists",
+    what:"Skeleton built from strontium sulfate — a mineral that dissolves in the ocean, leaving zero fossil trace.",
+    how:"10–20 radial spicules arranged per Müller's Law. Active strontium concentration against steep gradient. Contractile myonemes regulate buoyancy. Death → skeleton dissolves in days → 'phantom mineral flux' invisible to fossil record.",
+    constraints:"Building from a dissolving mineral is precarious. No evolutionary history (no fossils). Energetically expensive concentration. Architecture is inherently temporary.",
+    combo:"A species that leaves no physical trace — no fossils, no ruins. Impermanence as biology. Contractile buoyancy control pairs with hydraulic systems.",
+    hooks:"A civilization whose cities dissolve when they die. Müller's Law as sacred geometry. The philosophical weight of impermanence as biology.",
+    tags:["phantom-mineral","strontium-sulfate","no-fossil-record","buoyancy-control","impermanence","biomineralization"],
+    stats:{resilience:30, offense:0, regen:15, complexity:65, social:20}
+  },
+  {
+    id:"s05", name:"Chiton", icon:"🦷", cat:"Structure",
+    mech:"Magnetite Teeth — Hardest Biomineral",
+    source:"Cryptochiton stelleri — marine mollusk",
+    what:"Radula teeth made of magnetite (Fe₃O₄) — the hardest known biological material — on a conveyor-belt replacement system.",
+    how:"Multi-stage biomineralization: ferrihydrite → magnetite via scaffolding proteins (RTMP1). Teeth produced at back, worn at front, continuously replaced. Magnetite in chitinous matrix = hard + tough.",
+    constraints:"High iron uptake required. Complex phase-transition chemistry. Consumable tools requiring ongoing investment. Magnetite is magnetic — secondary field interactions.",
+    combo:"Hardest biological material. Conveyor-belt replacement = designed-to-be-consumed parts. Pairs with magnetotactic bacteria for build + sense from same mineral.",
+    hooks:"Teeth made of iron. A body designed around consumable, replaceable parts. What if a species built weapons from the hardest biomineral and sensed magnetic fields with the same material?",
+    tags:["magnetite","hardest-biomineral","iron","conveyor-belt-replacement","biomineralization","composite-material"],
+    stats:{resilience:65, offense:70, regen:40, complexity:60, social:5}
+  },
+  {
+    id:"s06", name:"Deep-sea Fish / Birds of Paradise", icon:"⬛", cat:"Structure",
+    mech:"Super-Black Surfaces (>99.5%)",
+    source:"Pacific blackdragon, fangtooth (fish) / Paradisaeidae (birds) — convergent evolution",
+    what:"Near-total light absorption via two completely different mechanisms in unrelated species.",
+    how:"Fish: Random close-packed melanosomes scatter light sideways within layer — photons absorbed before escaping. Birds: Structural micro-cavities in feather barbules trap light via multiple reflections. Even gold-coated feathers stay black.",
+    constraints:"Expensive melanosome packing. Structural approach requires precise micro-architecture. Binary — no partial super-black. Only useful where visual detection matters.",
+    combo:"Convergent evolution textbook case. Pairs with chromatophores as opposite endpoints. Could combine with selective bioluminescence — perfectly black except where it glows.",
+    hooks:"A creature that eats light. Invisibility through physics. Beauty framed by darkness — super-black as contrast for luminous display.",
+    tags:["super-black","light-absorption","convergent-evolution","camouflage","display","optical-engineering"],
+    stats:{resilience:40, offense:50, regen:10, complexity:75, social:30}
+  },
+  {
+    id:"s07", name:"Bone", icon:"🦴", cat:"Structure",
+    mech:"Piezoelectric Self-Engineering",
+    source:"All vertebrates (most studied in mammals)",
+    what:"Bones generate electrical signals under stress, then use those signals to direct their own structural remodeling.",
+    how:"Collagen fibers are piezoelectric — compression generates negative charge, tension generates positive. Osteocytes deposit bone at negative charge (stress) areas and resorb at positive (disuse). Architecture dynamically adapts to load in real time (Wolff's Law).",
+    constraints:"Remodeling is slow (weeks-months). Requires ongoing stress — microgravity causes rapid bone loss. Reactive not predictive. Can be overridden by disease.",
+    combo:"Self-engineering material. Pairs with bioelectric patterning as electrical structural encoding. Armor that strengthens where hit. Microgravity vulnerability for space-faring species.",
+    hooks:"Architecture that builds itself in response to stress. Bodies literally shaped by labor. The vulnerability of disuse.",
+    tags:["piezoelectricity","self-engineering","adaptive-architecture","bioelectricity","Wolffs-Law","use-it-or-lose-it"],
+    stats:{resilience:55, offense:10, regen:60, complexity:70, social:5}
+  },
+
+  // --- SENSING & COGNITION ---
+  {
+    id:"c01", name:"Octopus / Cuttlefish", icon:"🐙", cat:"Sensing",
+    mech:"Distributed Nervous System",
+    source:"Cephalopods — ~500M neurons, 2/3 in arms",
+    what:"Each arm has autonomous sensory and motor control independent of central brain. Arms can taste, touch, and respond even when severed.",
+    how:"Each arm has its own ganglion. Brain issues high-level commands; arms handle execution. Chromatophores partially under local control. Severed arms still respond to stimuli.",
+    constraints:"Coordination conflicts between autonomous arms. Central brain must maintain body map without direct control. Learning complicated — which part 'learns'?",
+    combo:"Centralized vs distributed control. Could combine with parasitic manipulation — what if one arm were hijacked? Pairs with bioelectric communication for non-neural coordination.",
+    hooks:"A mind distributed across nine brains. Do the arms have their own experience? What does 'self' mean when your limbs can think?",
+    tags:["distributed-cognition","arm-autonomy","local-processing","decentralized-control","chromatophores"],
+    stats:{resilience:50, offense:60, regen:30, complexity:95, social:20}
+  },
+  {
+    id:"c02", name:"Cuttlefish", icon:"🦑", cat:"Sensing",
+    mech:"Chromatophore Full-Body Display",
+    source:"Cephalopods (cuttlefish, octopus, squid)",
+    what:"Millisecond-speed control of skin color, pattern, texture, and reflectivity. Can display different patterns on different sides of body simultaneously.",
+    how:"Three layers: chromatophores (pigment, neural, milliseconds), iridophores (structural color via thin-film interference), leucophores (white backdrop). Papillae change texture. Dual-display capability.",
+    constraints:"Enormous neural processing demand for thousands of chromatophores. Metabolically expensive. Color-blind cephalopods may match via brightness and polarization, not color.",
+    combo:"Full-body communication surface — a species that speaks through skin. Pairs with super-black. Could use bioelectric fields instead of muscles. Dual messaging = deception.",
+    hooks:"A species whose skin IS its language. Impossibility of hiding emotion. Dual-display as lying to two audiences. Communication bandwidth through surface area.",
+    tags:["chromatophores","dynamic-display","skin-communication","texture-control","dual-messaging","visual-language"],
+    stats:{resilience:35, offense:45, regen:25, complexity:95, social:40}
+  },
+  {
+    id:"c03", name:"Pit Vipers", icon:"🐍", cat:"Sensing",
+    mech:"Infrared Thermal Imaging",
+    source:"Crotalinae — pit vipers, some boas and pythons",
+    what:"Creates merged visible-light-plus-heat image — sees warm-blooded prey in total darkness.",
+    how:"Pit organ membrane (15μm) with heat-sensitive TRPA1 channels detects 0.003°C differences. Signal processed in optic tectum alongside visual input, creating fused thermal-visual percept. Pit geometry acts as pinhole camera.",
+    constraints:"Low spatial resolution (thermal blur). ~1m range. Vulnerable membrane. Calibration changes with snake's own temperature.",
+    combo:"Alien perception. Merged-perception concept is broadly applicable. Could combine with chromatophores — seeing and broadcasting heat signatures.",
+    hooks:"Seeing heat. The world as thermal landscapes — warm bodies glowing against cool backgrounds.",
+    tags:["infrared","thermal-sensing","merged-perception","TRPA1","predator-adaptation"],
+    stats:{resilience:40, offense:75, regen:15, complexity:70, social:5}
+  },
+  {
+    id:"c04", name:"Mormyrids", icon:"⚡", cat:"Sensing",
+    mech:"Active Electrolocation",
+    source:"Elephantfish — largest brain-to-body ratio of any fish",
+    what:"Generates electric field and detects distortions to build real-time 3D electrical map of environment. Communicates via pulse patterns.",
+    how:"Electric organ in tail generates field. Electroreceptors across body detect distortions. Enormous cerebellum processes signals. Can distinguish materials, detect objects, communicate electrically.",
+    constraints:"Only works in water. Limited range (<1 body length). Broadcasting reveals location. Freshwater/saltwater conductivity affects performance.",
+    combo:"Pairs with Geobacter nanowires for species using electrical sensing AND transmission. Electrical language. Eavesdropping vulnerability.",
+    hooks:"Seeing with electricity. The world as an electrical landscape. Every signal reveals your location.",
+    tags:["electrolocation","electrogenesis","3D-mapping","electrical-communication","enlarged-cerebellum"],
+    stats:{resilience:40, offense:30, regen:15, complexity:90, social:50}
+  },
+  {
+    id:"c05", name:"Boquila trifoliolata", icon:"🌿", cat:"Sensing",
+    mech:"Plant Vision (Ocelli Hypothesis)",
+    source:"Boquila trifoliolata — climbing vine",
+    what:"Mimics leaf shape, size, color, and veins of whatever tree it climbs — including artificial plastic plants.",
+    how:"Epidermal cells act as simple lenses focusing light onto photosensitive layers. Crude shape/contrast resolution translated into auxin gradients controlling morphogenesis. Can mimic multiple hosts simultaneously.",
+    constraints:"Extremely low resolution. Slow (days-weeks). Only leaf shape, not real-time behavior. Only useful against visual predators.",
+    combo:"Vision without eyes or neurons. Pairs with plant counting as another plant computation. Ocelli-lens concept pairs with sponge fiber optics.",
+    hooks:"A plant that can see — resolves shapes and copies them. Mimicry without intention. A species that reshapes itself to match its environment within a single life.",
+    tags:["plant-vision","ocelli","mimicry","morphogenesis","non-neural-sensing","shape-recognition"],
+    stats:{resilience:35, offense:0, regen:25, complexity:80, social:5}
+  },
+  {
+    id:"c06", name:"Planaria", icon:"🪱", cat:"Sensing",
+    mech:"Bioelectric Body Memory",
+    source:"Dugesia japonica — planarian flatworms",
+    what:"Stores body-plan and learned memories in bioelectric voltage gradients, not neural circuits. Persists through decapitation and regeneration.",
+    how:"Gap junctions connect cells into electrical networks encoding positional info. Altered voltage patterns produce two-headed worms and persist through future regenerations. Trained behaviors reacquired faster after regrowing a new brain.",
+    constraints:"Patterns can be disrupted. Memory persistence is statistical (faster relearning, not perfect). Requires continuous gap junction maintenance. Bioelectric-gene expression relationship is complex.",
+    combo:"Memory in the body, not the brain. Pairs with regeneration — what survives? Pairs with piezoelectricity and nanowires as bioelectric systems. 'Overwriting the genome' pairs with epigenetic inheritance.",
+    hooks:"You can cut off the head and the body still remembers. Identity as a voltage pattern. Someone altering your bioelectric pattern — changing who you are at the tissue level.",
+    tags:["bioelectricity","somatic-memory","body-plan-encoding","non-neural-cognition","gap-junctions","regeneration"],
+    stats:{resilience:55, offense:5, regen:95, complexity:85, social:5}
+  },
+  {
+    id:"c07", name:"Physarum polycephalum", icon:"🟡", cat:"Sensing",
+    mech:"Network Optimization Intelligence",
+    source:"Slime mold — single-celled multinucleate protist",
+    what:"Solves complex optimization problems by physically remodeling its body. Replicated the Tokyo rail system.",
+    how:"Cytoplasmic tube network reinforces paths to food (widen) and degenerates dead ends. Oscillation frequency encodes quality and distance. Converges on near-optimal transport solutions.",
+    constraints:"Approximate, not exact. Hours to days. No long-term memory. Cannot distinguish optimization from starvation.",
+    combo:"Any networked system with reinforcement and decay could compute. Intelligence as architecture. Pairs with quorum sensing and bioelectric patterning.",
+    hooks:"Thinks by reshaping itself. A species whose cognition IS its infrastructure. Intelligence without neurons, plans, or awareness.",
+    tags:["network-optimization","non-neural-computation","slime-mold","leaky-integrator","emergent-intelligence"],
+    stats:{resilience:45, offense:5, regen:50, complexity:75, social:40}
+  },
+  {
+    id:"c08", name:"Mantis Shrimp", icon:"🌈", cat:"Sensing",
+    mech:"16-Channel Vision + Polarization",
+    source:"Stomatopoda — 16 photoreceptor types",
+    what:"UV to far-red vision plus circular polarization. But WORSE at fine color discrimination than humans.",
+    how:"Midband of 6 specialized ommatidia rows. 12 channels for wavelength, 2 for polarization. 'Barcode' recognition — each wavelength binary yes/no rather than comparison. Eyes move independently with trinocular depth.",
+    constraints:"Paradoxically worse at fine discrimination. Metabolically expensive. Compound eye limits spatial resolution. Speed over precision tradeoff.",
+    combo:"More receptors ≠ better vision. Barcode recognition = different cognitive approach. Polarized light as secret communication channel invisible to other species.",
+    hooks:"16 colors but less understanding than we get from 3. More information doesn't mean more insight. Polarized light as covert speech.",
+    tags:["hyperspectral-vision","polarization","barcode-recognition","UV-vision","speed-over-precision"],
+    stats:{resilience:55, offense:90, regen:20, complexity:90, social:10}
+  },
+  {
+    id:"c09", name:"Jumping Spider", icon:"🕷️", cat:"Sensing",
+    mech:"Depth from Defocus",
+    source:"Salticidae — jumping spiders",
+    what:"Calculates distance using deliberately blurred images — unique among animals.",
+    how:"Multi-layer retina: deepest layer focused, shallower defocused by chromatic aberration. Spider compares sharp vs blurred to compute distance. Analogous to computational photography algorithms.",
+    constraints:"Short range (centimeters). Depends on green light. Scanning takes time. Narrow field compensated by motion-detecting secondary eyes.",
+    combo:"Inverts assumption that sharp = better. Deliberate blur as information. Could combine with multiple eye types for different tasks.",
+    hooks:"Sees distance through blur. Information extracted from imperfection. A sensory system 'broken' by human standards but perfectly functional.",
+    tags:["depth-perception","defocus","chromatic-aberration","computational-vision","multi-layer-retina"],
+    stats:{resilience:30, offense:70, regen:10, complexity:80, social:10}
+  },
+  {
+    id:"c10", name:"Corvids", icon:"🐦‍⬛", cat:"Sensing",
+    mech:"Alternative Intelligence Architecture",
+    source:"Crows, ravens, jays, parrots",
+    what:"Primate-level cognition — tool use, mental time travel, mirror self-recognition — from a completely different brain architecture. No neocortex.",
+    how:"Nuclear-organized pallial structures with extremely dense neuron packing. Smaller neurons, shorter interneuronal distances → potentially faster processing. Convergent evolution of intelligence through different hardware.",
+    constraints:"Absolute brain size limits total neuron count. Dense packing generates heat. Different architecture makes comparison with mammals methodologically challenging.",
+    combo:"Intelligence is substrate-independent. Same outcomes from different hardware. What if intelligence emerged from crystalline lattice, bioelectric field, or fungal network?",
+    hooks:"Two brain designs arriving at the same capabilities. Intelligence is about computation, not hardware. A species whose intelligence is unrecognizable because its architecture is alien.",
+    tags:["alternative-architecture","dense-neurons","convergent-intelligence","substrate-independence","no-neocortex"],
+    stats:{resilience:45, offense:55, regen:15, complexity:90, social:75}
+  },
+
+  // --- REPRODUCTION & LIFE CYCLE ---
+  {
+    id:"r01", name:"Planaria / Axolotl", icon:"🔄", cat:"Reproduction",
+    mech:"Extreme Regeneration",
+    source:"Planaria (1/279th fragment → whole worm), Axolotls (limbs, brain, heart)",
+    what:"Regenerates complete functional bodies from fragments. Planaria from any piece; axolotls regrow perfect limbs with bone, muscle, nerve.",
+    how:"Planaria: neoblasts (pluripotent stem cells) + bioelectric/morphogen body-plan encoding. Axolotl: cells dedifferentiate at wound into blastema. Nerves required for axolotl regeneration.",
+    constraints:"Slow (weeks-months). Metabolically expensive. Cancer risk from shared proliferative pathways. Nerve dependency in axolotls. Body-plan info must be maintained constantly.",
+    combo:"Why don't all animals regenerate? Tradeoffs with immunity and cancer. Pairs with somatic memory — does a new brain retain memories? Combine with phase-transition bodies.",
+    hooks:"Cut it apart and each piece becomes a new whole. But does it remember? Is it the same person? The cancer tradeoff — immortality biology enables uncontrolled growth.",
+    tags:["regeneration","stem-cells","blastema","dedifferentiation","body-plan","cancer-tradeoff"],
+    stats:{resilience:65, offense:5, regen:100, complexity:80, social:5}
+  },
+  {
+    id:"r02", name:"Turritopsis dohrnii", icon:"🪼", cat:"Reproduction",
+    mech:"Biological Immortality — Reversion",
+    source:"The 'immortal jellyfish'",
+    what:"Reverts from adult medusa to juvenile polyp when stressed — theoretically infinite life cycle repetition.",
+    how:"Settles on surface, transdifferentiates all specialized cells back to juvenile state. Activates telomerase. Polyp then buds new medusae. Not healing — ontogenetic reversal.",
+    constraints:"Only under stress, not at will. Reverted polyp is a different body. Predation still kills. Requires simple body plan. Possible epigenetic error accumulation.",
+    combo:"Aging as reversible. Pairs with Hydra immortality (different strategy). Identity question: is the polyp the 'same' organism? What survives reversion?",
+    hooks:"Defeats death by becoming a child again — losing everything it was. Immortality at the cost of identity.",
+    tags:["biological-immortality","transdifferentiation","ontogenetic-reversal","aging-reversal","identity-discontinuity"],
+    stats:{resilience:50, offense:5, regen:100, complexity:60, social:5}
+  },
+  {
+    id:"r03", name:"Hydra", icon:"🌊", cat:"Reproduction",
+    mech:"Stem Cell Immortality — Continuous Renewal",
+    source:"Hydra — freshwater cnidarian",
+    what:"Biological immortality via continuous stem cell renewal. No cell in a Hydra is more than a few weeks old.",
+    how:"Three stem cell lineages replace all cells every ~20 days. FoxO transcription factor maintains proliferative capacity. Old cells pushed to extremities and shed. The organism replaces itself constantly.",
+    constraints:"Only ~20 cell types. High metabolic cost. Three lineages must stay balanced. Should have high cancer risk but doesn't. Still killed by predation.",
+    combo:"Continuity through pattern, not material. Opposite of Turritopsis — continuity rather than reversion. What IS identity if every cell is replaced every 20 days?",
+    hooks:"Never more than weeks old in any part, yet potentially millennia old as entity. Identity maintained through pattern, not substance.",
+    tags:["biological-immortality","stem-cells","FoxO","continuous-renewal","no-aging","self-replacement"],
+    stats:{resilience:60, offense:15, regen:95, complexity:40, social:10}
+  },
+  {
+    id:"r04", name:"Bdelloid Rotifers", icon:"🔬", cat:"Reproduction",
+    mech:"Horizontal Gene Theft",
+    source:"Bdelloid rotifers — 80M years without sex",
+    what:"Incorporates functional genes from bacteria, fungi, and plants (8-10% of genome) — acquiring capabilities from other kingdoms.",
+    how:"During desiccation, cell membranes become leaky, environmental DNA enters and integrates during rehydration. Fungal carotenoid genes in pea aphids = animals making their own plant pigments.",
+    constraints:"Most transferred DNA is junk. Foreign genes must be compatible. Leaky membranes expose to pathogens. Without sex, deleterious mutations accumulate (Muller's ratchet).",
+    combo:"Genomic chimerism — genetically part fungus, part bacterium. Pairs with kleptoplasty. Vulnerability (leaky membranes) enables capability acquisition.",
+    hooks:"A species that steals genes from everything it touches. What does 'species' mean? The link between vulnerability and acquisition.",
+    tags:["horizontal-gene-transfer","genomic-chimerism","asexual-reproduction","desiccation","cross-kingdom","acquired-capabilities"],
+    stats:{resilience:85, offense:5, regen:40, complexity:70, social:5}
+  },
+  {
+    id:"r05", name:"Aphids", icon:"🤰", cat:"Reproduction",
+    mech:"Telescoping Generations",
+    source:"Various aphid species",
+    what:"Pregnant females carry daughters already pregnant with granddaughters — three generations nested simultaneously.",
+    how:"Parthenogenetic females develop embryos that develop embryos before birth. Billions of descendants per season. Switches to sexual reproduction (males + cold-resistant eggs) when day length decreases.",
+    constraints:"Genetic uniformity = disease vulnerability. Only possible with parthenogenesis. Successive generations may have fewer resources.",
+    combo:"Generational nesting as reproductive acceleration. Pairs with Wolbachia and seasonal switching between reproductive strategies.",
+    hooks:"Grandmother, mother, daughter in one body. Individuality blurred across generations. The race against seasonal death.",
+    tags:["telescoping-generations","parthenogenesis","reproductive-acceleration","seasonal-switching","asexual"],
+    stats:{resilience:25, offense:5, regen:50, complexity:60, social:70}
+  },
+  {
+    id:"r06", name:"Myxozoa", icon:"⬇️", cat:"Reproduction",
+    mech:"Devolutionary Simplification",
+    source:"Myxozoa / Henneguya salminicola — degenerate cnidarians",
+    what:"Complex animals that evolved backward to near-unicellular parasites. Henneguya lost its entire mitochondrial genome — cannot respire aerobically.",
+    how:"Extreme genome reduction during parasitic adaptation. Lost body plan, nervous system, muscles, most developmental genes. Retained only cnidarian-specific polar capsules. Henneguya's energy source is a genuine mystery.",
+    constraints:"Total host dependency. Loss of free-living capacity. Appears irreversible (Dollo's Law). Cannot survive outside host.",
+    combo:"Evolution running backward — complexity is not one-way. Pairs with any dependency relationship. What would a species look like that is becoming simpler over time?",
+    hooks:"A species that chose simplicity. Is devolution death, or freedom? A creature that lost the ability to breathe — and survives.",
+    tags:["devolution","genome-reduction","parasitism","loss-of-complexity","mitochondria-loss","cnidarian"],
+    stats:{resilience:30, offense:15, regen:10, complexity:20, social:0}
+  },
+  {
+    id:"r07", name:"Anglerfish", icon:"🎣", cat:"Reproduction",
+    mech:"Sexual Parasitism — Male Fusion",
+    source:"Deep-sea anglerfish (Ceratioidei)",
+    what:"Males permanently fuse to females, degenerating into parasitic gonads. Circulatory systems merge. Key immune genes lost.",
+    how:"Tiny male bites female, jaw fuses, blood systems connect. Eyes, brain, gut atrophy. Multiple males per female. Immune system suppressed — adaptive immune genes absent.",
+    constraints:"Male sacrifices all autonomy. Female supports parasitic males. Immune compromise increases infection vulnerability. Only adaptive where mate-finding is nearly impossible.",
+    combo:"Most extreme sexual dimorphism. Immune compromise for union pairs with any immune manipulation. Deep-sea / sparse-habitat ecology.",
+    hooks:"Love as literal absorption. A species where union means losing yourself. The immune system as barrier to merger — dismantled for connection.",
+    tags:["sexual-parasitism","male-fusion","extreme-dimorphism","immune-compromise","deep-sea","mate-scarcity"],
+    stats:{resilience:25, offense:10, regen:15, complexity:70, social:90}
+  },
+  {
+    id:"r08", name:"Deinococcus radiodurans", icon:"🛡️", cat:"Reproduction",
+    mech:"Extreme DNA Repair",
+    source:"'Conan the Bacterium'",
+    what:"Survives radiation 1,000x the lethal dose for humans — genome shatters into hundreds of fragments and is perfectly reassembled in hours.",
+    how:"RecA recombinases align overlapping fragments using 4-10 redundant genome copies. High manganese protects repair enzymes. Tightly packed toroidal DNA organization limits fragment dispersal. Repair in 12-24 hours.",
+    constraints:"Inactive during repair. Multiple genomes expensive. Occasional errors. Originally evolved for desiccation resistance — radiation survival is a byproduct.",
+    combo:"Pairs with radiotrophy — eat radiation while repairing the damage. Redundant genome pairs with any redundancy-based resilience.",
+    hooks:"Shattered at the molecular level and reassembled. A body designed to be destroyed and rebuilt. Radiation resistance as accidental byproduct of drought survival.",
+    tags:["DNA-repair","radiation-resistance","genome-redundancy","desiccation","manganese","extreme-survival"],
+    stats:{resilience:100, offense:0, regen:90, complexity:55, social:5}
+  },
+
+  // --- DEFENSE & WEAPONRY ---
+  {
+    id:"d01", name:"Pistol Shrimp / Mantis Shrimp", icon:"💥", cat:"Defense",
+    mech:"Cavitation Weaponry",
+    source:"Alpheidae (pistol) / Stomatopoda (mantis)",
+    what:"Generates cavitation bubbles producing 4,700°C temperatures, shockwaves (218dB), and sonoluminescence (light from sound).",
+    how:"Pistol: oversized claw snaps at ~100km/h, displacing water → cavitation bubble → shockwave + flash. Mantis: saddle-spring stores energy, club accelerates at 23m/s, creating secondary cavitation impact after the blow.",
+    constraints:"Dedicated weapon (pistol claw useless otherwise). Spring takes time to load. Cavitation damages the weapon itself. Omnidirectional shockwave can stun user. Only works underwater.",
+    combo:"Extreme physics in biology. Self-damaging weaponry. Pairs with any aquatic predator design. The secondary impact (weapon + cavitation) is a design principle.",
+    hooks:"Generates temperatures hotter than the sun with its body. Creates light from violence. The cost of extreme weaponry.",
+    tags:["cavitation","shockwave","sonoluminescence","spring-mechanism","aquatic-weapon","extreme-physics"],
+    stats:{resilience:50, offense:100, regen:20, complexity:75, social:15}
+  },
+  {
+    id:"d02", name:"Bombardier Beetle", icon:"🪲", cat:"Defense",
+    mech:"Internal Chemical Explosions",
+    source:"Brachininae",
+    what:"Fires boiling (100°C) caustic spray via rapid internal exothermic reaction — pulsed at 500x/second.",
+    how:"Two reservoirs: hydroquinone + hydrogen peroxide, kept separate. Reaction chamber with catalase/peroxidase enzymes. Pulsed delivery through aimable turret nozzle.",
+    constraints:"Premature mixing is catastrophic. Chamber must withstand extreme heat/pressure. Finite supply. Precise neural valve control required.",
+    combo:"The engineering of keeping two explosives separated inside your body. Pulsed delivery as a design principle. Biological rocketry.",
+    hooks:"A walking chemical weapon. A defense mechanism that could destroy you if it malfunctioned.",
+    tags:["chemical-weapon","exothermic-reaction","biological-rocketry","pulsed-delivery","internal-chemistry"],
+    stats:{resilience:45, offense:90, regen:10, complexity:70, social:5}
+  },
+  {
+    id:"d03", name:"Hagfish", icon:"🐟", cat:"Defense",
+    mech:"Explosive Slime Deployment",
+    source:"Myxini — hagfish",
+    what:"Fills a bucket with fibrous slime in seconds, clogging predator gills. Self-cleans by tying itself in a knot.",
+    how:"~150 slime glands release mucin vesicles + protein thread skeins. Mucin hydrates 10,000x in water. Threads unravel to 15cm. Result: fibrous obstructive gel. Self-cleaning requires body knotting through flexible cartilaginous skeleton.",
+    constraints:"Significant protein/energy cost. Glands take time to refill. Must self-clean (knotting behavior). Less effective against air-breathing predators.",
+    combo:"Rapid-deployment material defense alternative to armor/venom/speed. Self-knotting as consequence of own defense. Could add toxicity to slime.",
+    hooks:"Weaponizing disgust. The necessity of a behavior (knotting) that exists only because of your own defense mechanism.",
+    tags:["slime","rapid-deployment","material-defense","self-cleaning","knotting","protein-threads"],
+    stats:{resilience:65, offense:60, regen:20, complexity:55, social:5}
+  },
+  {
+    id:"d04", name:"Hairy Frog", icon:"🐸", cat:"Defense",
+    mech:"Self-Breaking Bone Claws",
+    source:"Trichobatrachus robustus",
+    what:"Deploys bone claws by intentionally fracturing its own toe bones and forcing shards through skin.",
+    how:"Claw-shaped bones sit inside toe pads. Muscle contraction snaps connective tissue, fractures bone, drives sharp end through skin. Heals afterward via high regenerative capacity.",
+    constraints:"Real self-harm. Bone fracture requires healing. Regeneration-dependent. Last-resort defense.",
+    combo:"Self-harm as weapon deployment. Regeneration enables willingness to self-damage. Pairs with any regenerative species.",
+    hooks:"Weaponizing self-mutilation. The relationship between healing capacity and willingness to break yourself.",
+    tags:["self-harm-defense","bone-weapons","last-resort","regeneration-dependent"],
+    stats:{resilience:50, offense:70, regen:60, complexity:45, social:5}
+  },
+
+  // --- SYMBIOSIS ---
+  {
+    id:"y01", name:"Elysia chlorotica", icon:"🌿", cat:"Symbiosis",
+    mech:"Kleptoplasty — Stolen Photosynthesis",
+    source:"Sacoglossan sea slug",
+    what:"Steals chloroplasts from algae, incorporates them into its own cells, photosynthesizes for months. An animal running plant hardware.",
+    how:"Sequesters Vaucheria litorea chloroplasts in digestive cells. Plastids remain active 10+ months. Not horizontal gene transfer — plastids are inherently super-stable (encode own repair genes). Slug suppresses autophagy to prevent degradation.",
+    constraints:"Must eat specific alga. Chloroplasts degrade over months. Autophagy suppression may compromise cellular cleanup. Supplements rather than replaces feeding.",
+    combo:"Theft as symbiosis — predation becoming dependency. Pairs with horizontal gene transfer (stealing genes vs organelles). Autophagy tradeoff: protection vs cellular health.",
+    hooks:"Eats the sun by eating something that eats the sun. Vulnerability of depending on stolen equipment you can't repair. Slowly becoming something you consumed.",
+    tags:["kleptoplasty","stolen-organelles","photosynthesis","autophagy-suppression","animal-plant-hybrid"],
+    stats:{resilience:45, offense:10, regen:20, complexity:80, social:10}
+  },
+  {
+    id:"y02", name:"Parasitoid Wasp", icon:"🐝", cat:"Symbiosis",
+    mech:"Domesticated Virus Weapon",
+    source:"Cotesia, Braconidae, Ichneumonidae",
+    what:"Carries a virus genome integrated in its own DNA. Produces virus particles to inject into caterpillars, suppressing their immune systems.",
+    how:"Polydnavirus DNA replicated as part of wasp chromosomes. Functional virus produced only in ovaries. Injected into caterpillar: virus expresses immune-suppression genes. Virus cannot replicate in host — one-way deployment.",
+    constraints:"Wasp needs the virus (eggs die without it). Virus needs the wasp (can't replicate alone). Host immune evolution drives arms race. Viral genes under wasp selection pressure.",
+    combo:"A domesticated biological weapon. Three-way interaction model. What happens when the host acquires the virus genes?",
+    hooks:"A species that weaponized a virus by absorbing it into its genome. Domestication of a pathogen.",
+    tags:["domesticated-virus","immune-suppression","three-way-symbiosis","biological-weapon","integrated-genome","arms-race"],
+    stats:{resilience:40, offense:85, regen:10, complexity:90, social:50}
+  },
+  {
+    id:"y03", name:"Coral", icon:"🪸", cat:"Symbiosis",
+    mech:"Photosymbiosis — Zooxanthellae",
+    source:"Reef-building corals (Scleractinia)",
+    what:"Houses photosynthetic algae providing 90% of energy. Built the largest biological structures on Earth — then bleaches and dies from a few degrees of warming.",
+    how:"Coral provides shelter, CO₂, nutrients. Algae provide glycerol, glucose, amino acids. Coral selectively harbors productive strains, expels unproductive ones. Enables calcium carbonate construction in nutrient-poor waters.",
+    constraints:"Bleaching from temperature stress. Cannot survive long without symbionts. Restricted to shallow, clear, warm water. Ocean acidification threatens carbonate chemistry.",
+    combo:"The fragility of dependency. Pairs with any obligate symbiosis. Bleaching as civilization-scale collapse metaphor.",
+    hooks:"The largest structures built by the most fragile dependency. A civilization that expelled its energy source. Bleaching as metaphor.",
+    tags:["photosymbiosis","zooxanthellae","bleaching-vulnerability","construction","obligate-dependency"],
+    stats:{resilience:25, offense:5, regen:30, complexity:70, social:85}
+  },
+
+  // --- PARASITISM ---
+  {
+    id:"p01", name:"Ophiocordyceps", icon:"🧟", cat:"Parasitism",
+    mech:"Zombie Muscle Puppetry",
+    source:"Ophiocordyceps — zombie ant fungus",
+    what:"Infected ant climbs to specific height, bites leaf vein at solar noon on the north side, locks jaws, dies. Fungus fruits from head.",
+    how:"Controls muscles WITHOUT infecting the brain. Fungal cells surround muscle fibers, secrete neuroactive compounds. Specificity: height, orientation, time of day, tissue bitten — all optimized for spore dispersal.",
+    constraints:"Species-specific (one fungus per ant species). Manipulation takes days. Ant colonies detect and quarantine infected members. Fruiting body vulnerable after host dies.",
+    combo:"Puppetry without touching the brain. Precision as evidence of deep co-evolution. Colony immune response as quarantine. Half-zombified creature fighting for control.",
+    hooks:"Mind control via muscles. The precision of the manipulation. What if it were imperfect — a half-zombified creature?",
+    tags:["zombie-parasite","behavior-manipulation","muscle-hijacking","fungal-parasite","precision-control","extended-phenotype"],
+    stats:{resilience:25, offense:80, regen:30, complexity:90, social:0}
+  },
+  {
+    id:"p02", name:"Cymothoa exigua", icon:"👅", cat:"Parasitism",
+    mech:"Tongue Replacement Parasitism",
+    source:"Tongue-eating louse — parasitic isopod",
+    what:"Devours fish tongue, attaches to stub, and functions as the fish's new tongue. Only known parasite that replaces a host organ.",
+    how:"Enters through gills, attaches to tongue via claws, extracts blood until tongue atrophies. Attaches to remaining muscles and stub. Fish uses parasite as prosthetic tongue to manipulate food.",
+    constraints:"Host-specific. Fish survives with reduced feeding efficiency. Parasite must avoid dislodgement. Host death = parasite death.",
+    combo:"Functional parasitic prosthetic. What if the replacement were better than the original?",
+    hooks:"Part of your body is a separate organism. The fish doesn't know its tongue is alive. Discovering that a part of yourself is not your own.",
+    tags:["organ-replacement","parasitism","functional-prosthetic","isopod","body-horror"],
+    stats:{resilience:40, offense:65, regen:10, complexity:75, social:30}
+  },
+  {
+    id:"p03", name:"Sacculina carcini", icon:"🦀", cat:"Parasitism",
+    mech:"Hormonal Identity Rewrite",
+    source:"Parasitic barnacle",
+    what:"Injects root network throughout crab's body. Sterilizes host, feminizes males, reprograms crab to raise parasite's eggs as its own.",
+    how:"Root-like interna penetrates every tissue. Sterilizes crab, alters hormones — males develop wider abdomens and female brooding behavior. External egg sac positioned exactly where crab's eggs would be. Crab aerates, cleans, defends parasite eggs instinctively.",
+    constraints:"Interna so extensive that removal kills crab. Requires precise hormonal mimicry. Vulnerable during external reproductive phase.",
+    combo:"Identity rewrite via chemistry. Root-network infiltration. Pairs with Wolbachia for reproductive manipulation at different scales.",
+    hooks:"Rewrites your identity — a male crab converted to mother for alien young. The crab cannot distinguish its instinct from the manipulation.",
+    tags:["hormonal-hijacking","feminization","brood-parasitism","root-network","behavioral-reprogramming","total-takeover"],
+    stats:{resilience:35, offense:75, regen:20, complexity:95, social:55}
+  },
+  {
+    id:"p04", name:"Wolbachia", icon:"♀️", cat:"Parasitism",
+    mech:"Mass Reproductive Manipulation",
+    source:"Wolbachia — infects ~60% of insect species",
+    what:"Feminizes males, kills male embryos, induces parthenogenesis, causes cytoplasmic incompatibility. In some species, has become essential for survival.",
+    how:"Maternally transmitted. Strategies: infected males can't mate with uninfected females (incompatibility); male embryos killed; genetic males develop as females; females reproduce without mating. Over time, some hosts became dependent.",
+    constraints:"Manipulates for own benefit, not host's. Long co-evolution can lead to genuine mutualism — host loses independence. Transition from manipulation to dependency is a trap.",
+    combo:"Parasite so successful it became essential. Who domesticated whom? Pairs with any reproductive manipulation or eusociality.",
+    hooks:"The transition from manipulation to dependency as domestication. A species that no longer controls its own reproduction.",
+    tags:["reproductive-manipulation","Wolbachia","feminization","parthenogenesis","cytoplasmic-incompatibility","parasite-to-mutualist"],
+    stats:{resilience:70, offense:50, regen:10, complexity:85, social:65}
+  },
+
+  // --- COLLECTIVE ---
+  {
+    id:"k01", name:"Siphonophores", icon:"🎐", cat:"Collective",
+    mech:"Colonial Superorganism",
+    source:"Praya dubia (40-50m), Marrus orthocanna, Portuguese man-of-war",
+    what:"Single egg → thousands of specialized clones (propulsion, feeding, defense, reproduction) that form one predatory organism. No zooid survives alone.",
+    how:"Zooids differentiate from single zygote: nectophores (jets), gastrozooids (stomachs), dactylozooids (stingers), gonophores (gonads). Colonial nervous system coordinates thousands of bodies. Praya dubia rivals blue whale in length.",
+    constraints:"Total interdependence. Physically fragile. Coordination of thousands requires communication bandwidth. Decisions are emergent, not centralized.",
+    combo:"The impossibility of defining the individual. Pairs with any modular/colonial concept. Quorum sensing for decision-making.",
+    hooks:"One and thousands simultaneously. Every organ was once an independent organism. What does consciousness look like in a colonial mind?",
+    tags:["colonial-organism","clonal-specialization","emergent-coordination","distributed-processing","superorganism"],
+    stats:{resilience:40, offense:70, regen:30, complexity:95, social:100}
+  },
+  {
+    id:"k02", name:"Dictyostelium", icon:"🏗️", cat:"Collective",
+    mech:"Altruistic Self-Sacrifice",
+    source:"Dictyostelium discoideum — cellular slime mold",
+    what:"Starving amoebae aggregate into a slug, then 20% voluntarily die to form a rigid stalk so others can become spores.",
+    how:"cAMP aggregation signal. Tens of thousands form slug that migrates toward light. 20% become dead stalk cells; 80% become spores. Cell fate influenced by nutritional state — healthier cells more likely to survive.",
+    constraints:"True altruism — stalk cells die. Cheater mutants exploit the system. 'Poor die for the rich' problem — well-fed cells preferentially become spores.",
+    combo:"Unicellular organisms inventing death. The cheater problem. Model for origin of multicellularity.",
+    hooks:"Cells that invent altruistic death. The first time cells agreed to die for the group. The inequity of sacrifice.",
+    tags:["altruistic-death","aggregation","cheater-problem","unicellular-to-multicellular","cAMP-signaling"],
+    stats:{resilience:35, offense:5, regen:50, complexity:65, social:100}
+  },
+  {
+    id:"k03", name:"Quorum Sensing", icon:"🗳️", cat:"Collective",
+    mech:"Chemical Democracy",
+    source:"Many bacteria — Vibrio fischeri, Pseudomonas aeruginosa",
+    what:"Bacteria 'vote' via autoinducer molecules. Group behaviors activate only when population density crosses a threshold.",
+    how:"Each bacterium produces autoinducer. Low density: molecules diffuse away. High density: concentration crosses threshold → coordinated gene expression (bioluminescence, biofilm, virulence). Chemical democracy.",
+    constraints:"Exploitable by cheaters. Signals degrade environmentally. Threshold is probabilistic. Some hosts evolved quorum-quenching countermeasures.",
+    combo:"Decision-making where no individual decides. Pairs with any collective behavior. Elegance and vulnerability of threshold governance.",
+    hooks:"Democracy at microbial scale. No individual decides but the collective acts. A civilization where every action requires a chemical vote.",
+    tags:["quorum-sensing","chemical-democracy","threshold-behavior","autoinducer","collective-decision","cheater-vulnerability"],
+    stats:{resilience:50, offense:40, regen:20, complexity:60, social:100}
+  },
+  {
+    id:"k04", name:"Naked Mole Rat Colony", icon:"👑", cat:"Collective",
+    mech:"Mammalian Eusociality",
+    source:"Heterocephalus glaber — colonies of 70-300",
+    what:"Single breeding queen, non-reproductive workers and soldiers. Queen's death triggers fatal competition. Winner's body physically transforms.",
+    how:"Queen suppresses reproduction via behavioral dominance (pushing, aggression) and possibly chemical signals. Soldiers defend against snakes. Queen death → females compete fatally → winner's vertebrae lengthen, pelvis reshapes for reproduction.",
+    constraints:"Genetic bottleneck. Colony depends on queen. Workers sacrifice reproduction. Underground limits resources. Co-occurs with longevity, cancer resistance, cold-bloodedness.",
+    combo:"Insect colony made of mammals. Morphological change upon role assignment. The entire biology is anomalous — every adaptation interconnected.",
+    hooks:"A queen whose body transforms for the role. Workers who never reproduce. The fatal succession crisis. Individual identity subsumed by colony function.",
+    tags:["eusociality","mammalian-anomaly","reproductive-suppression","queen-system","morphological-change"],
+    stats:{resilience:80, offense:30, regen:40, complexity:90, social:100}
+  }
+];
+
+// ======================================
+// STATE
+// ======================================
+let activeFilter = 'all';
+let searchQuery = '';
+let selectedId = null;
+let mixer = [];
+
+// ======================================
+// CATEGORIES
+// ======================================
+const CAT_COLORS = {
+  Metabolism: 'var(--cat-metabolism)',
+  Structure: 'var(--cat-structure)',
+  Sensing: 'var(--cat-sensing)',
+  Reproduction: 'var(--cat-reproduction)',
+  Defense: 'var(--cat-defense)',
+  Symbiosis: 'var(--cat-symbiosis)',
+  Parasitism: 'var(--cat-parasitism)',
+  Collective: 'var(--cat-collective)'
+};
+
+// ======================================
+// INIT
+// ======================================
+function init() {
+  document.getElementById('entryCount').textContent = DB.length;
+  const allTags = new Set(); DB.forEach(d => d.tags.forEach(t => allTags.add(t)));
+  document.getElementById('tagCount').textContent = allTags.size;
+  renderFilters();
+  renderList();
+}
+
+// ======================================
+// FILTERS
+// ======================================
+function renderFilters() {
+  const cats = [...new Set(DB.map(d => d.cat))];
+  const bar = document.getElementById('filterBar');
+  bar.innerHTML = `<button class="filter-btn active" onclick="setFilter('all',this)">All</button>`;
+  cats.forEach(c => {
+    bar.innerHTML += `<button class="filter-btn" onclick="setFilter('${c}',this)">${c}</button>`;
+  });
+}
+
+function setFilter(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+function onSearch(q) {
+  searchQuery = q.toLowerCase();
+  renderList();
+}
+
+// ======================================
+// LIST
+// ======================================
+function renderList() {
+  const list = document.getElementById('specimenList');
+  let items = DB;
+  if (activeFilter !== 'all') items = items.filter(d => d.cat === activeFilter);
+  if (searchQuery) {
+    items = items.filter(d => {
+      const blob = [d.name, d.mech, d.source, d.what, ...d.tags].join(' ').toLowerCase();
+      return blob.includes(searchQuery);
+    });
+  }
+
+  list.innerHTML = items.map(d => {
+    const color = CAT_COLORS[d.cat] || 'var(--accent)';
+    const active = d.id === selectedId;
+    return `<div class="specimen-item ${active ? 'active' : ''}" onclick="selectItem('${d.id}')">
+      <div class="icon">${d.icon}</div>
+      <div class="info">
+        <div class="name">${d.name}</div>
+        <div class="mech">${d.mech}</div>
+      </div>
+      <div class="add-btn" onclick="event.stopPropagation(); addToMixer('${d.id}')" title="Add to synthesizer">+</div>
+    </div>`;
+  }).join('');
+}
+
+// ======================================
+// DETAIL
+// ======================================
+function selectItem(id) {
+  selectedId = id;
+  const d = DB.find(x => x.id === id);
+  if (!d) return;
+  renderList();
+
+  const color = CAT_COLORS[d.cat] || 'var(--accent)';
+  const panel = document.getElementById('detailPanel');
+
+  const statsHTML = Object.entries(d.stats).map(([k,v]) => {
+    return `<div class="stat-row">
+      <div class="stat-label">${k}</div>
+      <div class="stat-track"><div class="stat-fill" style="width:${v}%;background:${color}"></div></div>
+      <div class="stat-val">${v}</div>
+    </div>`;
+  }).join('');
+
+  const tagsHTML = d.tags.map(t => `<span class="tag" onclick="onSearch('${t}'); document.getElementById('searchInput').value='${t}'">${t}</span>`).join('');
+
+  panel.innerHTML = `
+    <div class="detail-header">
+      <div class="cat-badge" style="background:${color}22; color:${color}; border:1px solid ${color}44">${d.cat}</div>
+      <h2>${d.name}</h2>
+      <div class="subtitle">${d.mech}</div>
+      <div class="source">${d.source}</div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="section-label">What It Does</div>
+        <p>${d.what}</p>
+      </div>
+      <div class="detail-section">
+        <div class="section-label">How It Works</div>
+        <p>${d.how}</p>
+      </div>
+      <div class="detail-section">
+        <div class="section-label">Constraints & Tradeoffs</div>
+        <p class="constraint-text">${d.constraints}</p>
+      </div>
+      <div class="detail-section">
+        <div class="section-label">Combinatorial Notes</div>
+        <p>${d.combo}</p>
+      </div>
+      <div class="detail-section">
+        <div class="section-label">Narrative Hooks</div>
+        <p class="hook-text">${d.hooks}</p>
+      </div>
+      <div class="detail-section">
+        <div class="section-label">Tags</div>
+        <div class="tags-row">${tagsHTML}</div>
+      </div>
+      <div class="detail-section">
+        <div class="section-label">Functional Attributes</div>
+        <div class="stat-bars">${statsHTML}</div>
+      </div>
+    </div>`;
+}
+
+// ======================================
+// MIXER
+// ======================================
+function addToMixer(id) {
+  if (mixer.length >= 3 || mixer.find(m => m.id === id)) return;
+  const d = DB.find(x => x.id === id);
+  if (d) { mixer.push(d); updateMixer(); }
+}
+
+function removeFromMixer(idx) {
+  mixer.splice(idx, 1);
+  updateMixer();
+  document.getElementById('hybridResult').style.display = 'none';
+}
+
+function clearMixer() {
+  mixer = [];
+  updateMixer();
+  document.getElementById('hybridResult').style.display = 'none';
+}
+
+function updateMixer() {
+  for (let i = 0; i < 3; i++) {
+    const slot = document.getElementById(`slot-${i}`);
+    if (mixer[i]) {
+      const d = mixer[i];
+      const c = CAT_COLORS[d.cat];
+      slot.className = 'mixer-slot filled';
+      slot.style.borderColor = c;
+      slot.innerHTML = `
+        <div class="slot-icon">${d.icon}</div>
+        <div class="slot-info">
+          <div class="slot-name" style="color:${c}">${d.name}</div>
+          <div class="slot-mech">${d.mech}</div>
+        </div>
+        <div class="slot-remove" onclick="removeFromMixer(${i})">×</div>`;
+    } else {
+      slot.className = 'mixer-slot';
+      slot.style.borderColor = 'var(--border)';
+      slot.innerHTML = `<div class="slot-empty">Slot ${i+1}${i === 0 ? ' — click + to add' : ''}</div>`;
+    }
+  }
+  document.getElementById('synthBtn').disabled = mixer.length < 2;
+}
+
+// ======================================
+// SYNTHESIZE
+// ======================================
+async function synthesize() {
+  if (mixer.length < 2) return;
+  const btn = document.getElementById('synthBtn');
+  const result = document.getElementById('hybridResult');
+
+  btn.classList.add('loading');
+  btn.textContent = 'Synthesizing…';
+  btn.disabled = true;
+  result.style.display = 'block';
+  result.innerHTML = `<span class="hybrid-label">Generating hybrid…</span><div class="hybrid-body" style="color:var(--text-faint)">Combining mechanisms and modeling biological plausibility…</div>`;
+
+  const ingredients = mixer.map(m => `
+— ${m.name} (${m.mech})
+  What: ${m.what}
+  How: ${m.how}
+  Constraints: ${m.constraints}
+  Combinatorial notes: ${m.combo}
+  Narrative hooks: ${m.hooks}
+  Tags: ${m.tags.join(', ')}`).join('\n');
+
+  const prompt = `You are a xenobiologist designing speculative alien species for a hard science fiction universe. You are given ${mixer.length} real biological mechanisms from Earth organisms. Your job is to combine them into ONE coherent speculative species.
+
+MECHANISMS TO COMBINE:
+${ingredients}
+
+Generate a speculative hybrid species. Format your response EXACTLY like this (plain text, no markdown):
+
+NAME: [A evocative species name — scientific-sounding or mythic]
+
+BODY: [2-3 sentences describing physical form, size, habitat]
+
+INTEGRATED MECHANISM: [3-4 sentences explaining HOW these mechanisms work together in one organism. Be specific about the biology. The mechanisms should not just coexist — they should interact, creating emergent properties neither has alone.]
+
+COMPOUNDING CONSTRAINTS: [2-3 sentences on the costs, vulnerabilities, and tradeoffs of combining these systems. What new failure modes emerge?]
+
+NARRATIVE POTENTIAL: [2-3 sentences on why this species is dramatically interesting — what stories does it enable? What philosophical questions does it raise?]
+
+Be scientifically grounded but creatively bold. No generic descriptions. Every sentence should be specific and surprising.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(c => c.text || '').join('') || 'Synthesis failed — try again.';
+
+    // Parse sections
+    const sections = {};
+    const lines = text.split('\n');
+    let currentKey = '';
+    for (const line of lines) {
+      const match = line.match(/^(NAME|BODY|INTEGRATED MECHANISM|COMPOUNDING CONSTRAINTS|NARRATIVE POTENTIAL):\s*(.*)/);
+      if (match) {
+        currentKey = match[1];
+        sections[currentKey] = match[2];
+      } else if (currentKey && line.trim()) {
+        sections[currentKey] = (sections[currentKey] || '') + ' ' + line.trim();
+      }
+    }
+
+    const name = sections['NAME'] || 'Unknown Hybrid';
+    const body = sections['BODY'] || '';
+    const mechanism = sections['INTEGRATED MECHANISM'] || '';
+    const tradeoffs = sections['COMPOUNDING CONSTRAINTS'] || '';
+    const narrative = sections['NARRATIVE POTENTIAL'] || '';
+
+    result.innerHTML = `
+      <span class="hybrid-label">Synthesized Species</span>
+      <h4>${name.trim()}</h4>
+      <div class="hybrid-body" style="margin-top:12px;">
+        <div style="margin-bottom:12px;">
+          <div style="font-size:9px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:4px;">Morphology</div>
+          <div>${body.trim()}</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:9px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:4px;">Integrated Mechanism</div>
+          <div>${mechanism.trim()}</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:9px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;color:var(--amber);margin-bottom:4px;">Compounding Constraints</div>
+          <div style="color:var(--amber)">${tradeoffs.trim()}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;color:var(--violet);margin-bottom:4px;">Narrative Potential</div>
+          <div style="color:var(--violet);font-style:italic;">${narrative.trim()}</div>
+        </div>
+      </div>`;
+  } catch (err) {
+    result.innerHTML = `<span class="hybrid-label" style="color:var(--red)">Synthesis Error</span><div class="hybrid-body" style="color:var(--text-faint)">${err.message}. Try a different combination.</div>`;
+  }
+
+  btn.classList.remove('loading');
+  btn.textContent = 'Synthesize Hybrid';
+  btn.disabled = mixer.length < 2;
+}
+
+init();
+</script>
+</body>
+</html>
