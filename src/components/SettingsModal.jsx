@@ -4,13 +4,13 @@ import { MODELS, DEFAULT_SYSTEM_PROMPT } from '../utils/constants';
 export default function SettingsModal({ settings, onSave, onClose }) {
   const [form, setForm] = useState({
     model: settings.model || MODELS[0].id,
-    systemPrompt: settings.systemPrompt || ''
+    systemPrompt: settings.systemPrompt || DEFAULT_SYSTEM_PROMPT
   });
 
   useEffect(() => {
     setForm({
       model: settings.model || MODELS[0].id,
-      systemPrompt: settings.systemPrompt || ''
+      systemPrompt: settings.systemPrompt || DEFAULT_SYSTEM_PROMPT
     });
   }, [settings]);
 
@@ -23,7 +23,7 @@ export default function SettingsModal({ settings, onSave, onClose }) {
   const handleReset = () => {
     setForm(prev => ({
       ...prev,
-      systemPrompt: ''
+      systemPrompt: DEFAULT_SYSTEM_PROMPT
     }));
   };
 
@@ -54,20 +54,11 @@ export default function SettingsModal({ settings, onSave, onClose }) {
             <div className="form-group">
               <label>
                 System Prompt 
-                <span style={{ 
-                  fontWeight: 'normal', 
-                  color: 'var(--text-faint)',
-                  marginLeft: 8,
-                  textTransform: 'none',
-                  letterSpacing: 'normal'
-                }}>
-                  (leave empty for default)
-                </span>
               </label>
               <textarea 
                 value={form.systemPrompt}
                 onChange={e => setForm(prev => ({ ...prev, systemPrompt: e.target.value }))}
-                placeholder={DEFAULT_SYSTEM_PROMPT}
+                placeholder="Enter system prompt..."
                 style={{ minHeight: 200 }}
               />
               <div style={{ marginTop: 8 }}>

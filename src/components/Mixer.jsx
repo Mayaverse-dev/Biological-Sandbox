@@ -42,7 +42,7 @@ export default function Mixer({
               >
                 <div className="slot-icon">{slot.icon}</div>
                 <div className="slot-info">
-                  <div className="slot-name" style={{ color }}>{slot.name}</div>
+                  <div className="slot-name">{slot.name}</div>
                   <div className="slot-mech">{slot.mech}</div>
                 </div>
                 <button 
