@@ -6,7 +6,8 @@ export const CAT_COLORS = {
   Defense: 'var(--cat-defense)',
   Symbiosis: 'var(--cat-symbiosis)',
   Parasitism: 'var(--cat-parasitism)',
-  Collective: 'var(--cat-collective)'
+  Collective: 'var(--cat-collective)',
+  Quantum: 'var(--cat-quantum)'
 };
 
 export const CATEGORIES = [
@@ -17,7 +18,8 @@ export const CATEGORIES = [
   'Defense',
   'Symbiosis',
   'Parasitism',
-  'Collective'
+  'Collective',
+  'Quantum'
 ];
 
 export const MODELS = [

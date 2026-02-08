@@ -35,6 +35,7 @@
   --cat-symbiosis: #f5a623;
   --cat-parasitism: #ff8c42;
   --cat-collective: #ff6eb4;
+  --cat-quantum: #00e5ff;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.4);
   --radius: 8px;
@@ -73,6 +74,7 @@
   --cat-symbiosis: #c78600;
   --cat-parasitism: #e65100;
   --cat-collective: #d81b60;
+  --cat-quantum: #00acc1;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.12);
 }

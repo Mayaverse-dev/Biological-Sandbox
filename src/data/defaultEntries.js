@@ -606,7 +606,7 @@ export const defaultEntries = [
 
   // --- QUANTUM ---
   {
-    id:"q01", name:"Eidolon cohaerens", icon:"👻", cat:"Sensing",
+    id:"q01", name:"Eidolon cohaerens", icon:"👻", cat:"Quantum",
     mech:"Quantum Coherent Lifecycle",
     source:"Green sulfur bacteria (FMO complex), cryptochrome radical pairs, enzyme proton tunneling — extrapolated to organism-scale coherence",
     what:"Nanoscale cryophilic organism whose body IS a quantum coherent system. Exists in superposition, tunnels through matter, and reproduces by decohering.",
@@ -614,7 +614,7 @@ export const defaultEntries = [
     constraints:"Any thermal noise above threshold destroys coherence instantly — the most fragile species imaginable. Cannot be studied without being changed; every probe collapses superposition. Scale-locked to nanometers permanently — coherence doesn't scale. Unknowable in principle, not merely in practice.",
     combo:"Inverse of Desulforudis — both metabolize where they shouldn't, one classically slow, one quantum-tunneled. Entanglement-correlation vs Siphonophore neural coordination — unity without signals. Pairs with Acantharia as two species invisible to science for different reasons.",
     hooks:"A species that thrives in ambiguity and dies from certainty. First contact destroys what you came to find. A colony that acts in unison because its members were never separate enough to act independently. What does it mean to exist without a definite state?",
-    tags:["quantum-coherence","tunneling","entanglement","decoherence-lifecycle","observation-vulnerability","nanoscale","cryophilic","correlated-behavior","unknowable","superposition"],
+    tags:["quantum"],
     stats:{resilience:15, offense:0, regen:70, complexity:100, social:85}
   }
 ];
