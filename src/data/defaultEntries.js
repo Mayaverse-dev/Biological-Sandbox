@@ -602,6 +602,20 @@ export const defaultEntries = [
     hooks:"A queen whose body transforms for the role. Workers who never reproduce. The fatal succession crisis. Individual identity subsumed by colony function.",
     tags:["eusociality","mammalian-anomaly","reproductive-suppression","queen-system","morphological-change"],
     stats:{resilience:80, offense:30, regen:40, complexity:90, social:100}
+  },
+
+  // --- QUANTUM ---
+  {
+    id:"q01", name:"Eidolon cohaerens", icon:"👻", cat:"Sensing",
+    mech:"Quantum Coherent Lifecycle",
+    source:"Green sulfur bacteria (FMO complex), cryptochrome radical pairs, enzyme proton tunneling — extrapolated to organism-scale coherence",
+    what:"Nanoscale cryophilic organism whose body IS a quantum coherent system. Exists in superposition, tunnels through matter, and reproduces by decohering.",
+    how:"Sub-micrometer body maintains quantum coherence at near-zero temperatures. Metabolism runs entirely on proton tunneling through ice lattice — bypassing classical chemistry where reactions are frozen. Separated individuals share entangled radical-pair states enabling correlated random behavior: identical choices made simultaneously with no signal exchanged. Decoherence is reproduction — environmental measurement collapses superposition into multiple classical seeds, each re-establishing coherence. Death is reproduction. Observation is fission.",
+    constraints:"Any thermal noise above threshold destroys coherence instantly — the most fragile species imaginable. Cannot be studied without being changed; every probe collapses superposition. Scale-locked to nanometers permanently — coherence doesn't scale. Unknowable in principle, not merely in practice.",
+    combo:"Inverse of Desulforudis — both metabolize where they shouldn't, one classically slow, one quantum-tunneled. Entanglement-correlation vs Siphonophore neural coordination — unity without signals. Pairs with Acantharia as two species invisible to science for different reasons.",
+    hooks:"A species that thrives in ambiguity and dies from certainty. First contact destroys what you came to find. A colony that acts in unison because its members were never separate enough to act independently. What does it mean to exist without a definite state?",
+    tags:["quantum-coherence","tunneling","entanglement","decoherence-lifecycle","observation-vulnerability","nanoscale","cryophilic","correlated-behavior","unknowable","superposition"],
+    stats:{resilience:15, offense:0, regen:70, complexity:100, social:85}
   }
 ];
 
