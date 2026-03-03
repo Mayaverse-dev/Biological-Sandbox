@@ -12,15 +12,17 @@ export default function Mixer({
   sliders,
   onSliderChange
 }) {
-  const [slidersExpanded, setSlidersExpanded] = useState(false);
+  const [slidersExpanded, setSlidersExpanded] = useState(true);
   const filledSlots = slots.filter(s => s !== null);
   const canSynthesize = filledSlots.length >= 2;
 
   const biologicalSliders = SYNTHESIS_SLIDERS.filter(s => s.group === 'biological');
   const survivalSliders = SYNTHESIS_SLIDERS.filter(s => s.group === 'survival');
 
+  const slidersDisabled = !canSynthesize || loading;
+
   const renderSlider = (slider) => (
-    <div className="slider-row" key={slider.key}>
+    <div className={`slider-row ${slidersDisabled ? 'disabled' : ''}`} key={slider.key}>
       <div className="slider-header">
         <span className="slider-label">{slider.label}</span>
         <span className="slider-value">{sliders[slider.key]}</span>
@@ -36,6 +38,7 @@ export default function Mixer({
         value={sliders[slider.key]}
         onChange={(e) => onSliderChange(slider.key, parseInt(e.target.value))}
         className="slider-input"
+        disabled={slidersDisabled}
       />
     </div>
   );

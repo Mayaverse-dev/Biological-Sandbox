@@ -369,6 +369,7 @@ export default function App() {
       <div className="main">
         <Sidebar 
           species={species}
+          loading={speciesLoading}
           selectedId={selectedId}
           onSelect={handleSelect}
           onAddToMixer={handleAddToMixer}

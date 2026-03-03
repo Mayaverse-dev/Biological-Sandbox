@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { CAT_COLORS, CATEGORIES } from '../utils/constants';
 
@@ -51,6 +52,7 @@ function SpeciesItem({ species, isSelected, onSelect, onAddToMixer }) {
 
 export default function Sidebar({ 
   species, 
+  loading,
   selectedId, 
   onSelect, 
   onAddToMixer,
@@ -58,14 +60,14 @@ export default function Sidebar({
   searchQuery,
   onSearchChange
 }) {
-  const [expandedCategories, setExpandedCategories] = useState(() => {
+  const [expandedCategories, setExpandedCategories] = useLocalStorage('bio-sidebar-cats', () => {
     const initial = {};
     CATEGORIES.forEach(cat => { initial[cat] = true; });
     initial['Synthesized'] = true;
     return initial;
   });
 
-  const [expandedGenerations, setExpandedGenerations] = useState({});
+  const [expandedGenerations, setExpandedGenerations] = useLocalStorage('bio-sidebar-gens', {});
 
   const toggleCategory = (cat) => {
     setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
@@ -134,80 +136,90 @@ export default function Sidebar({
       </div>
       
       <div className="tree-view">
-        {CATEGORIES.map(cat => {
-          const items = baseByCategory[cat];
-          if (items.length === 0 && searchQuery) return null;
-          
-          return (
-            <TreeNode
-              key={cat}
-              label={cat}
-              count={items.length}
-              isOpen={expandedCategories[cat]}
-              onToggle={() => toggleCategory(cat)}
-              color={CAT_COLORS[cat]}
-            >
-              {items.map(s => (
-                <SpeciesItem
-                  key={s.id}
-                  species={s}
-                  isSelected={s.id === selectedId}
-                  onSelect={onSelect}
-                  onAddToMixer={onAddToMixer}
-                />
-              ))}
-            </TreeNode>
-          );
-        })}
-
-        {(totalSynthesized > 0 || !searchQuery) && (
-          <>
-            <div className="tree-divider" />
-            
-            <TreeNode
-              label="Synthesized Species"
-              count={totalSynthesized}
-              isOpen={expandedCategories['Synthesized']}
-              onToggle={() => toggleCategory('Synthesized')}
-              color="var(--accent)"
-            >
-              {generations.length === 0 ? (
-                <div className="tree-empty">No synthesized species yet</div>
-              ) : (
-                generations.map(gen => {
-                  const items = synthesizedByGen[gen];
-                  const isGenExpanded = expandedGenerations[gen] !== false;
-                  
-                  return (
-                    <TreeNode
-                      key={`gen-${gen}`}
-                      label={`Gen ${gen}`}
-                      count={items.length}
-                      isOpen={isGenExpanded}
-                      onToggle={() => toggleGeneration(gen)}
-                      color="var(--text-dim)"
-                    >
-                      {items.map(s => (
-                        <SpeciesItem
-                          key={s.id}
-                          species={s}
-                          isSelected={s.id === selectedId}
-                          onSelect={onSelect}
-                          onAddToMixer={onAddToMixer}
-                        />
-                      ))}
-                    </TreeNode>
-                  );
-                })
-              )}
-            </TreeNode>
-          </>
-        )}
-
-        {filteredSpecies.length === 0 && searchQuery && (
-          <div className="tree-empty" style={{ padding: '32px 16px' }}>
-            No species found matching "{searchQuery}"
+        {loading && (
+          <div className="sidebar-loading">
+            <div className="sidebar-spinner" />
+            <span>Loading species…</span>
           </div>
+        )}
+        {!loading && (
+          <>
+            {CATEGORIES.map(cat => {
+              const items = baseByCategory[cat];
+              if (items.length === 0 && searchQuery) return null;
+              
+              return (
+                <TreeNode
+                  key={cat}
+                  label={cat}
+                  count={items.length}
+                  isOpen={expandedCategories[cat]}
+                  onToggle={() => toggleCategory(cat)}
+                  color={CAT_COLORS[cat]}
+                >
+                  {items.map(s => (
+                    <SpeciesItem
+                      key={s.id}
+                      species={s}
+                      isSelected={s.id === selectedId}
+                      onSelect={onSelect}
+                      onAddToMixer={onAddToMixer}
+                    />
+                  ))}
+                </TreeNode>
+              );
+            })}
+
+            {(totalSynthesized > 0 || !searchQuery) && (
+              <>
+                <div className="tree-divider" />
+                
+                <TreeNode
+                  label="Synthesized Species"
+                  count={totalSynthesized}
+                  isOpen={expandedCategories['Synthesized']}
+                  onToggle={() => toggleCategory('Synthesized')}
+                  color="var(--accent)"
+                >
+                  {generations.length === 0 ? (
+                    <div className="tree-empty">No synthesized species yet</div>
+                  ) : (
+                    generations.map(gen => {
+                      const items = synthesizedByGen[gen];
+                      const isGenExpanded = expandedGenerations[gen] !== false;
+                      
+                      return (
+                        <TreeNode
+                          key={`gen-${gen}`}
+                          label={`Gen ${gen}`}
+                          count={items.length}
+                          isOpen={isGenExpanded}
+                          onToggle={() => toggleGeneration(gen)}
+                          color="var(--text-dim)"
+                        >
+                          {items.map(s => (
+                            <SpeciesItem
+                              key={s.id}
+                              species={s}
+                              isSelected={s.id === selectedId}
+                              onSelect={onSelect}
+                              onAddToMixer={onAddToMixer}
+                            />
+                          ))}
+                        </TreeNode>
+                      );
+                    })
+                  )}
+                </TreeNode>
+              </>
+            )}
+
+            {filteredSpecies.length === 0 && searchQuery && (
+              <div className="tree-empty" style={{ padding: '32px 16px' }}>
+                No species found matching "{searchQuery}"
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
