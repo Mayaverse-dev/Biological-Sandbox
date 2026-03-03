@@ -7,7 +7,8 @@ export const CAT_COLORS = {
   Symbiosis: 'var(--cat-symbiosis)',
   Parasitism: 'var(--cat-parasitism)',
   Collective: 'var(--cat-collective)',
-  Quantum: 'var(--cat-quantum)'
+  Quantum: 'var(--cat-quantum)',
+  Synthesized: 'var(--accent)'
 };
 
 export const CATEGORIES = [
@@ -27,21 +28,41 @@ export const MODELS = [
   { id: 'claude-opus-4-6', name: 'Claude 4.6 Opus' }
 ];
 
-export const DEFAULT_SYSTEM_PROMPT = `You are a xenobiologist designing speculative alien species for a hard science fiction universe. You are given \${mechanisms.length} real biological mechanisms from Earth organisms. Your job is to combine them into ONE coherent speculative species.
+export const SYNTHESIS_SLIDERS = [
+  // Biological (5)
+  { key: 'cognitive', label: 'Cognitive Complexity', lowLabel: 'Instinct/Reflex', highLabel: 'Abstract/Sapient', group: 'biological' },
+  { key: 'physical', label: 'Physical Power', lowLabel: 'Fragile/Weak', highLabel: 'Colossal/Herculean', group: 'biological' },
+  { key: 'agility', label: 'Kinetic Agility', lowLabel: 'Lumbering/Static', highLabel: 'Fluid/Lightning-fast', group: 'biological' },
+  { key: 'metabolic', label: 'Metabolic Rate', lowLabel: 'Dormant/Slow', highLabel: 'Voracious/High-energy', group: 'biological' },
+  { key: 'sensory', label: 'Sensory Acuity', lowLabel: 'Near-blind/Limited', highLabel: 'Hyper-aware/Multispectral', group: 'biological' },
+  // Survival & Social (5)
+  { key: 'hardiness', label: 'Environmental Hardiness', lowLabel: 'Niche Specialist', highLabel: 'Apex Generalist', group: 'survival' },
+  { key: 'reproductive', label: 'Reproductive Output', lowLabel: 'K-Selection/Rare', highLabel: 'r-Selection/Swarms', group: 'survival' },
+  { key: 'social', label: 'Social Connectivity', lowLabel: 'Hyper-Solitary', highLabel: 'Hive Mind/Eusocial', group: 'survival' },
+  { key: 'longevity', label: 'Individual Longevity', lowLabel: 'Ephemeral (Days)', highLabel: 'Millennial/Immortal', group: 'survival' },
+  { key: 'communication', label: 'Communication Bandwidth', lowLabel: 'Basic Cues', highLabel: 'Total Information Transfer', group: 'survival' }
+];
 
-MECHANISMS TO COMBINE:
+export const DEFAULT_SLIDERS = SYNTHESIS_SLIDERS.reduce((acc, slider) => {
+  acc[slider.key] = 5; // Neutral midpoint
+  return acc;
+}, {});
+
+export const DEFAULT_SYSTEM_PROMPT = `You are a xenobiologist designing speculative alien species for a hard science fiction universe. You are given \${speciesList.length} \${entityType}. Your job is to combine them into ONE coherent speculative species.
+
+ENTITIES TO COMBINE:
 \${ingredients}
 
-Generate a speculative hybrid species. Format your response EXACTLY like this (plain text, no markdown):
+\${sliderProfile}
+Design a speculative hybrid species that combines these mechanisms. The mechanisms should not just coexist — they should interact, creating emergent properties neither has alone.
 
-NAME: [A evocative species name — scientific-sounding or mythic]
+Consider:
+- How the biological mechanisms integrate and enhance each other
+- What new capabilities and limitations emerge from their combination
+- The costs, vulnerabilities, and tradeoffs
+- How this species could further combine with other mechanisms
+- What stories and philosophical questions this species enables
 
-BODY: [2-3 sentences describing physical form, size, habitat]
+Base the stats on how the parent mechanisms combine - consider whether traits amplify, average, or create new dynamics.
 
-INTEGRATED MECHANISM: [3-4 sentences explaining HOW these mechanisms work together in one organism. Be specific about the biology. The mechanisms should not just coexist — they should interact, creating emergent properties neither has alone.]
-
-COMPOUNDING CONSTRAINTS: [2-3 sentences on the costs, vulnerabilities, and tradeoffs of combining these systems. What new failure modes emerge?]
-
-NARRATIVE POTENTIAL: [2-3 sentences on why this species is dramatically interesting — what stories does it enable? What philosophical questions does it raise?]
-
-Be scientifically grounded but creatively bold. No generic descriptions. Every sentence should be specific and surprising.`;
+Be scientifically grounded but creatively bold. No generic descriptions. Every detail should be specific and surprising.`;

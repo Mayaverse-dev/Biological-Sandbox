@@ -1,47 +1,52 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { defaultEntries } from './data/defaultEntries';
-import { MODELS, CATEGORIES } from './utils/constants';
-import { synthesize, parseHybridResult } from './utils/api';
+import { MODELS, DEFAULT_SLIDERS } from './utils/constants';
+import { 
+  fetchSpecies, 
+  fetchSpeciesLineage,
+  createSpecies,
+  updateSpecies,
+  deleteSpecies,
+  synthesize, 
+  saveSynthesisResult
+} from './utils/api';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import DetailPanel from './components/DetailPanel';
 import Mixer from './components/Mixer';
 import SynthesisView from './components/SynthesisView';
-import HistorySidebar from './components/HistorySidebar';
 import EntryForm from './components/EntryForm';
 import SettingsModal from './components/SettingsModal';
 
 export default function App() {
-  // Theme state
+  // Theme state (keep in localStorage)
   const [theme, setTheme] = useLocalStorage('bio-sandbox-theme', 'dark');
   
-  // Entries state with localStorage
-  const [entries, setEntries] = useLocalStorage('bio-sandbox-entries', defaultEntries);
-  
-  // Settings state with localStorage
+  // Settings state (keep in localStorage)
   const [settings, setSettings] = useLocalStorage('bio-sandbox-settings', {
     model: MODELS[0].id,
     systemPrompt: ''
   });
 
-  // Synthesis history
-  const [synthesisHistory, setSynthesisHistory] = useLocalStorage('bio-sandbox-history', []);
+  // Species from database
+  const [species, setSpecies] = useState([]);
+  const [speciesLoading, setSpeciesLoading] = useState(true);
+  const [selectedSpecies, setSelectedSpecies] = useState(null);
+  const [lineageLoading, setLineageLoading] = useState(false);
 
   // UI state
   const [selectedId, setSelectedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState([...CATEGORIES]); // All selected by default
   const [mixerSlots, setMixerSlots] = useState([null, null]);
+  const [sliders, setSliders] = useState(DEFAULT_SLIDERS);
   
   // View state: 'browse' or 'synthesis'
   const [viewMode, setViewMode] = useState('browse');
   const [currentSynthesis, setCurrentSynthesis] = useState(null);
   const [synthesisLoading, setSynthesisLoading] = useState(false);
   const [synthesisError, setSynthesisError] = useState(null);
-  
-  // History sidebar state - collapsed by default
-  const [historyOpen, setHistoryOpen] = useLocalStorage('bio-sandbox-history-open', false);
+  const [synthesisSaving, setSynthesisSaving] = useState(false);
+  const [synthesisSaved, setSynthesisSaved] = useState(false);
   
   // Modal state
   const [showEntryForm, setShowEntryForm] = useState(false);
@@ -55,17 +60,66 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // Computed values
-  const selectedEntry = useMemo(() => 
-    entries.find(e => e.id === selectedId), 
-    [entries, selectedId]
-  );
+  // Load species from database
+  const loadSpecies = useCallback(async () => {
+    try {
+      setSpeciesLoading(true);
+      const data = await fetchSpecies();
+      setSpecies(data);
+    } catch (err) {
+      console.error('Failed to load species:', err);
+      showToast('Failed to load species');
+    } finally {
+      setSpeciesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSpecies();
+  }, [loadSpecies]);
+
+  // Load selected species from cache, lazy-load lineage in background
+  useEffect(() => {
+    if (!selectedId) {
+      setSelectedSpecies(null);
+      setLineageLoading(false);
+      return;
+    }
+
+    // Immediately use cached species data
+    const cached = species.find(s => s.id === selectedId);
+    if (!cached) {
+      setSelectedSpecies(null);
+      setLineageLoading(false);
+      return;
+    }
+
+    // Set cached data immediately (instant display)
+    setSelectedSpecies({ ...cached, parents: null, children: null });
+
+    // Fetch lineage (parents/children) in background for all species
+    setLineageLoading(true);
+    fetchSpeciesLineage(selectedId)
+      .then(lineage => {
+        setSelectedSpecies(prev => 
+          prev?.id === selectedId 
+            ? { ...prev, parents: lineage.parents, children: lineage.children }
+            : prev
+        );
+      })
+      .catch(err => {
+        console.error('Failed to load lineage:', err);
+      })
+      .finally(() => {
+        setLineageLoading(false);
+      });
+  }, [selectedId, species]);
 
   const allTags = useMemo(() => {
     const tags = new Set();
-    entries.forEach(e => e.tags.forEach(t => tags.add(t)));
+    species.forEach(s => (s.tags || []).forEach(t => tags.add(t)));
     return Array.from(tags).sort();
-  }, [entries]);
+  }, [species]);
 
   const tagCount = allTags.length;
 
@@ -81,51 +135,93 @@ export default function App() {
   }, [setTheme]);
 
   // Entry handlers
-  const handleSaveEntry = useCallback((entry) => {
-    setEntries(prev => {
-      const existing = prev.findIndex(e => e.id === entry.id);
-      if (existing >= 0) {
-        const updated = [...prev];
-        updated[existing] = entry;
-        return updated;
+  const handleSaveEntry = useCallback(async (entry) => {
+    try {
+      const speciesData = {
+        name: entry.name,
+        icon: entry.icon,
+        category: entry.cat,
+        mech: entry.mech,
+        source: entry.source,
+        what: entry.what,
+        how: entry.how,
+        combo: entry.combo,
+        hooks: entry.hooks,
+        constraints_text: entry.constraints,
+        tags: entry.tags,
+        stats: entry.stats
+      };
+
+      let saved;
+      if (entry.id && !entry.id.startsWith('new-')) {
+        saved = await updateSpecies(entry.id, speciesData);
+      } else {
+        saved = await createSpecies(speciesData);
       }
-      return [...prev, entry];
-    });
-    setShowEntryForm(false);
-    setEditingEntry(null);
-    setSelectedId(entry.id);
-  }, [setEntries]);
+
+      await loadSpecies();
+      setShowEntryForm(false);
+      setEditingEntry(null);
+      setSelectedId(saved.id);
+      showToast('Entry saved');
+    } catch (err) {
+      console.error('Failed to save entry:', err);
+      showToast('Failed to save entry');
+    }
+  }, [loadSpecies, showToast]);
 
   const handleDeleteEntry = useCallback((id) => {
     setShowDeleteConfirm(id);
   }, []);
 
-  const confirmDelete = useCallback(() => {
+  const confirmDelete = useCallback(async () => {
     if (showDeleteConfirm) {
-      setEntries(prev => prev.filter(e => e.id !== showDeleteConfirm));
-      if (selectedId === showDeleteConfirm) {
-        setSelectedId(null);
+      try {
+        await deleteSpecies(showDeleteConfirm);
+        await loadSpecies();
+        
+        if (selectedId === showDeleteConfirm) {
+          setSelectedId(null);
+        }
+        
+        setMixerSlots(prev => prev.map(slot => 
+          slot?.id === showDeleteConfirm ? null : slot
+        ));
+        
+        setShowDeleteConfirm(null);
+        showToast('Entry deleted');
+      } catch (err) {
+        console.error('Failed to delete:', err);
+        showToast('Failed to delete entry');
       }
-      // Remove from mixer if present
-      setMixerSlots(prev => prev.map(slot => 
-        slot?.id === showDeleteConfirm ? null : slot
-      ));
-      setShowDeleteConfirm(null);
     }
-  }, [showDeleteConfirm, selectedId, setEntries]);
+  }, [showDeleteConfirm, selectedId, loadSpecies, showToast]);
 
   const handleEditEntry = useCallback((entry) => {
-    setEditingEntry(entry);
+    const formEntry = {
+      id: entry.id,
+      name: entry.name,
+      icon: entry.icon,
+      cat: entry.category,
+      mech: entry.mech,
+      source: entry.source,
+      what: entry.what,
+      how: entry.how,
+      combo: entry.combo,
+      hooks: entry.hooks,
+      constraints: entry.constraints_text,
+      tags: entry.tags || [],
+      stats: typeof entry.stats === 'string' ? JSON.parse(entry.stats) : entry.stats
+    };
+    setEditingEntry(formEntry);
     setShowEntryForm(true);
   }, []);
 
   // Mixer handlers
   const handleAddToMixer = useCallback((entry) => {
     setMixerSlots(prev => {
-      // Don't add if already in mixer
       if (prev.some(s => s?.id === entry.id)) return prev;
       
-      // Find first empty slot
       const emptyIdx = prev.findIndex(s => s === null);
       if (emptyIdx >= 0) {
         const updated = [...prev];
@@ -133,16 +229,13 @@ export default function App() {
         return updated;
       }
       
-      // All slots full, add new slot
       return [...prev, entry];
     });
   }, []);
 
   const handleRemoveSlot = useCallback((idx) => {
     setMixerSlots(prev => {
-      // Remove the item and compact the array (no gaps)
       const filled = prev.filter((_, i) => i !== idx).filter(s => s !== null);
-      // Pad with nulls to maintain at least 2 slots
       while (filled.length < 2) {
         filled.push(null);
       }
@@ -156,6 +249,11 @@ export default function App() {
 
   const handleClearMixer = useCallback(() => {
     setMixerSlots([null, null]);
+    setSliders(DEFAULT_SLIDERS);
+  }, []);
+
+  const handleSliderChange = useCallback((key, value) => {
+    setSliders(prev => ({ ...prev, [key]: value }));
   }, []);
 
   // Synthesis handlers
@@ -166,60 +264,92 @@ export default function App() {
     setSynthesisLoading(true);
     setSynthesisError(null);
     setCurrentSynthesis(null);
+    setSynthesisSaved(false);
     setViewMode('synthesis');
 
     try {
-      const text = await synthesize(filledSlots, settings.model, settings.systemPrompt);
-      const parsed = parseHybridResult(text);
+      const response = await synthesize(filledSlots, settings.model, settings.systemPrompt, sliders);
+      // response.result is already parsed JSON from structured output
+      const result = response.result;
       
       const synthesis = {
-        id: `synth-${Date.now()}`,
-        timestamp: Date.now(),
-        name: parsed.name,
-        body: parsed.body,
-        mechanism: parsed.mechanism,
-        constraints: parsed.constraints,
-        narrative: parsed.narrative,
-        mechanisms: filledSlots,
+        // Unified structure (same fields as base mechanisms)
+        name: result.name,
+        what: result.what,
+        how: result.how,
+        constraints: result.constraints,
+        combo: result.combo,
+        hooks: result.hooks,
+        stats: result.stats,
+        tags: result.tags,
+        // Synthesis metadata
+        generation: response.generation,
+        parent_ids: response.parent_ids,
+        parent_tags: response.parent_tags,
+        parents: filledSlots,
         model: settings.model
       };
       
       setCurrentSynthesis(synthesis);
-      // Auto-save to history
-      setSynthesisHistory(prev => [synthesis, ...prev].slice(0, 50));
     } catch (err) {
       setSynthesisError(err.message);
     } finally {
       setSynthesisLoading(false);
     }
-  }, [mixerSlots, settings.model, settings.systemPrompt]);
+  }, [mixerSlots, settings.model, settings.systemPrompt, sliders]);
 
-  const handleSelectFromHistory = useCallback((item) => {
-    setCurrentSynthesis(item);
-    setViewMode('synthesis');
-  }, []);
+  const handleSaveSynthesis = useCallback(async () => {
+    if (!currentSynthesis || synthesisSaved) return;
 
-  const handleDeleteFromHistory = useCallback((id) => {
-    setSynthesisHistory(prev => prev.filter(h => h.id !== id));
-    if (currentSynthesis?.id === id) {
-      setCurrentSynthesis(null);
-      setViewMode('browse');
+    setSynthesisSaving(true);
+    try {
+      const saved = await saveSynthesisResult(
+        {
+          name: currentSynthesis.name,
+          what: currentSynthesis.what,
+          how: currentSynthesis.how,
+          constraints: currentSynthesis.constraints,
+          combo: currentSynthesis.combo,
+          hooks: currentSynthesis.hooks,
+          stats: currentSynthesis.stats,
+          tags: currentSynthesis.tags
+        },
+        currentSynthesis.generation,
+        currentSynthesis.parent_ids,
+        currentSynthesis.parent_tags || [],
+        currentSynthesis.model
+      );
+
+      setSynthesisSaved(true);
+      await loadSpecies();
+      showToast('Species saved!');
+      
+      setCurrentSynthesis(prev => ({ ...prev, id: saved.id }));
+    } catch (err) {
+      console.error('Failed to save synthesis:', err);
+      showToast('Failed to save species');
+    } finally {
+      setSynthesisSaving(false);
     }
-  }, [currentSynthesis, setSynthesisHistory]);
-
-  const handleClearHistory = useCallback(() => {
-    setSynthesisHistory([]);
-    showToast('History cleared');
-  }, [setSynthesisHistory, showToast]);
+  }, [currentSynthesis, synthesisSaved, loadSpecies, showToast]);
 
   const handleBackToBrowse = useCallback(() => {
     setViewMode('browse');
     setSynthesisError(null);
+    setCurrentSynthesis(null);
+    setSynthesisSaved(false);
   }, []);
 
   const handleRegenerate = useCallback(() => {
+    setSynthesisSaved(false);
     handleSynthesize();
   }, [handleSynthesize]);
+
+  // Select handler
+  const handleSelect = useCallback((id) => {
+    setSelectedId(id);
+    setViewMode('browse');
+  }, []);
 
   // Search/filter handlers
   const handleTagClick = useCallback((tag) => {
@@ -229,21 +359,18 @@ export default function App() {
   return (
     <div className="app">
       <Header 
-        entryCount={entries.length}
+        entryCount={species.length}
         tagCount={tagCount}
         onOpenSettings={() => setShowSettings(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
       
-      <div className={`main ${!historyOpen ? 'history-collapsed' : ''}`}>
+      <div className="main">
         <Sidebar 
-          entries={entries}
+          species={species}
           selectedId={selectedId}
-          onSelect={(id) => {
-            setSelectedId(id);
-            setViewMode('browse');
-          }}
+          onSelect={handleSelect}
           onAddToMixer={handleAddToMixer}
           onOpenAddEntry={() => {
             setEditingEntry(null);
@@ -251,17 +378,18 @@ export default function App() {
           }}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          selectedCategories={selectedCategories}
-          onCategoryChange={setSelectedCategories}
         />
         
         <div className="center-panel">
           {viewMode === 'browse' ? (
             <DetailPanel 
-              entry={selectedEntry}
+              species={selectedSpecies}
+              lineageLoading={lineageLoading}
               onEdit={handleEditEntry}
               onDelete={handleDeleteEntry}
               onTagClick={handleTagClick}
+              onAddToMixer={handleAddToMixer}
+              onSelect={handleSelect}
             />
           ) : (
             <SynthesisView
@@ -269,6 +397,10 @@ export default function App() {
               loading={synthesisLoading}
               error={synthesisError}
               onBack={handleBackToBrowse}
+              onSave={handleSaveSynthesis}
+              onRegenerate={handleRegenerate}
+              saving={synthesisSaving}
+              saved={synthesisSaved}
             />
           )}
         </div>
@@ -280,16 +412,8 @@ export default function App() {
           onClearAll={handleClearMixer}
           onSynthesize={handleSynthesize}
           loading={synthesisLoading}
-        />
-
-        <HistorySidebar
-          history={synthesisHistory}
-          currentSynthesisId={currentSynthesis?.id}
-          onSelectSynthesis={handleSelectFromHistory}
-          onDeleteSynthesis={handleDeleteFromHistory}
-          onClearAll={handleClearHistory}
-          isOpen={historyOpen}
-          onToggle={() => setHistoryOpen(prev => !prev)}
+          sliders={sliders}
+          onSliderChange={handleSliderChange}
         />
       </div>
 

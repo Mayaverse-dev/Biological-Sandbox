@@ -1,37 +1,121 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { CAT_COLORS, CATEGORIES } from '../utils/constants';
-import CategoryDropdown from './CategoryDropdown';
+
+function TreeNode({ label, count, isOpen, onToggle, color, children }) {
+  return (
+    <div className="tree-node">
+      <div className="tree-node-header" onClick={onToggle}>
+        <span className="tree-chevron">
+          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </span>
+        <span className="tree-label" style={{ color }}>
+          {label}
+        </span>
+        <span className="tree-count">{count}</span>
+      </div>
+      {isOpen && <div className="tree-children">{children}</div>}
+    </div>
+  );
+}
+
+function SpeciesItem({ species, isSelected, onSelect, onAddToMixer }) {
+  const displayName = species.is_synthesized ? species.name : species.name;
+  const subtext = species.is_synthesized 
+    ? `Gen ${species.generation}` 
+    : species.mech;
+
+  return (
+    <div 
+      className={`specimen-item ${isSelected ? 'active' : ''}`}
+      onClick={() => onSelect(species.id)}
+    >
+      <div className="icon">{species.icon}</div>
+      <div className="info">
+        <div className="name">{displayName}</div>
+        <div className="mech">{subtext}</div>
+      </div>
+      <button 
+        className="add-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddToMixer(species);
+        }}
+        title="Add to synthesizer"
+      >
+        <Plus size={14} />
+      </button>
+    </div>
+  );
+}
 
 export default function Sidebar({ 
-  entries, 
+  species, 
   selectedId, 
   onSelect, 
   onAddToMixer,
   onOpenAddEntry,
   searchQuery,
-  onSearchChange,
-  selectedCategories,
-  onCategoryChange
+  onSearchChange
 }) {
-  const filteredEntries = useMemo(() => {
-    let items = entries;
+  const [expandedCategories, setExpandedCategories] = useState(() => {
+    const initial = {};
+    CATEGORIES.forEach(cat => { initial[cat] = true; });
+    initial['Synthesized'] = true;
+    return initial;
+  });
+
+  const [expandedGenerations, setExpandedGenerations] = useState({});
+
+  const toggleCategory = (cat) => {
+    setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
+
+  const toggleGeneration = (gen) => {
+    setExpandedGenerations(prev => ({ ...prev, [gen]: !prev[gen] }));
+  };
+
+  const filteredSpecies = useMemo(() => {
+    if (!searchQuery) return species;
     
-    // Filter by selected categories (empty array or all selected = show all)
-    const allSelected = selectedCategories.length === CATEGORIES.length || selectedCategories.length === 0;
-    if (!allSelected) {
-      items = items.filter(d => selectedCategories.includes(d.cat));
-    }
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      items = items.filter(d => {
-        const blob = [d.name, d.mech, d.source, d.what, ...d.tags].join(' ').toLowerCase();
-        return blob.includes(query);
-      });
-    }
-    
-    return items;
-  }, [entries, selectedCategories, searchQuery]);
+    const query = searchQuery.toLowerCase();
+    return species.filter(s => {
+      const searchText = [
+        s.name, 
+        s.mech, 
+        s.source, 
+        s.what,
+        s.body,
+        ...(s.tags || [])
+      ].filter(Boolean).join(' ').toLowerCase();
+      return searchText.includes(query);
+    });
+  }, [species, searchQuery]);
+
+  const { baseByCategory, synthesizedByGen } = useMemo(() => {
+    const baseByCategory = {};
+    const synthesizedByGen = {};
+
+    CATEGORIES.forEach(cat => { baseByCategory[cat] = []; });
+
+    filteredSpecies.forEach(s => {
+      if (s.is_synthesized) {
+        const gen = s.generation || 1;
+        if (!synthesizedByGen[gen]) synthesizedByGen[gen] = [];
+        synthesizedByGen[gen].push(s);
+      } else {
+        const cat = s.category || 'Metabolism';
+        if (baseByCategory[cat]) {
+          baseByCategory[cat].push(s);
+        }
+      }
+    });
+
+    return { baseByCategory, synthesizedByGen };
+  }, [filteredSpecies]);
+
+  const generations = Object.keys(synthesizedByGen).map(Number).sort((a, b) => a - b);
+  const totalSynthesized = Object.values(synthesizedByGen).flat().length;
 
   return (
     <div className="sidebar">
@@ -39,51 +123,90 @@ export default function Sidebar({
         <div className="search-box">
           <input 
             type="text" 
-            placeholder="Search mechanisms, organisms, tags…"
+            placeholder="Search species, mechanisms, tags…"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
         <button className="add-entry-btn" onClick={onOpenAddEntry} title="Add new entry">
-          +
+          <Plus size={16} />
         </button>
       </div>
       
-      <CategoryDropdown 
-        selectedCategories={selectedCategories}
-        onSelectionChange={onCategoryChange}
-      />
-      
-      <div className="specimen-list">
-        {filteredEntries.map(entry => {
-          const color = CAT_COLORS[entry.cat] || 'var(--accent)';
+      <div className="tree-view">
+        {CATEGORIES.map(cat => {
+          const items = baseByCategory[cat];
+          if (items.length === 0 && searchQuery) return null;
+          
           return (
-            <div 
-              key={entry.id}
-              className={`specimen-item ${entry.id === selectedId ? 'active' : ''}`}
-              onClick={() => onSelect(entry.id)}
+            <TreeNode
+              key={cat}
+              label={cat}
+              count={items.length}
+              isOpen={expandedCategories[cat]}
+              onToggle={() => toggleCategory(cat)}
+              color={CAT_COLORS[cat]}
             >
-              <div className="icon">{entry.icon}</div>
-              <div className="info">
-                <div className="name">{entry.name}</div>
-                <div className="mech">{entry.mech}</div>
-              </div>
-              <button 
-                className="add-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddToMixer(entry);
-                }}
-                title="Add to synthesizer"
-              >
-                +
-              </button>
-            </div>
+              {items.map(s => (
+                <SpeciesItem
+                  key={s.id}
+                  species={s}
+                  isSelected={s.id === selectedId}
+                  onSelect={onSelect}
+                  onAddToMixer={onAddToMixer}
+                />
+              ))}
+            </TreeNode>
           );
         })}
-        {filteredEntries.length === 0 && (
-          <div className="empty-state" style={{ padding: '32px 16px' }}>
-            <p>No mechanisms found matching your filters.</p>
+
+        {(totalSynthesized > 0 || !searchQuery) && (
+          <>
+            <div className="tree-divider" />
+            
+            <TreeNode
+              label="Synthesized Species"
+              count={totalSynthesized}
+              isOpen={expandedCategories['Synthesized']}
+              onToggle={() => toggleCategory('Synthesized')}
+              color="var(--accent)"
+            >
+              {generations.length === 0 ? (
+                <div className="tree-empty">No synthesized species yet</div>
+              ) : (
+                generations.map(gen => {
+                  const items = synthesizedByGen[gen];
+                  const isGenExpanded = expandedGenerations[gen] !== false;
+                  
+                  return (
+                    <TreeNode
+                      key={`gen-${gen}`}
+                      label={`Gen ${gen}`}
+                      count={items.length}
+                      isOpen={isGenExpanded}
+                      onToggle={() => toggleGeneration(gen)}
+                      color="var(--text-dim)"
+                    >
+                      {items.map(s => (
+                        <SpeciesItem
+                          key={s.id}
+                          species={s}
+                          isSelected={s.id === selectedId}
+                          onSelect={onSelect}
+                          onAddToMixer={onAddToMixer}
+                        />
+                      ))}
+                    </TreeNode>
+                  );
+                })
+              )}
+            </TreeNode>
+          </>
+        )}
+
+        {filteredSpecies.length === 0 && searchQuery && (
+          <div className="tree-empty" style={{ padding: '32px 16px' }}>
+            No species found matching "{searchQuery}"
           </div>
         )}
       </div>
